@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>:MOVE Motor Smart Controller – Guide</title>
+<style>
+:root{--bg:#f4f3ee;--card:#fff;--text:#23221f;--muted:#5f5e5a;--line:#dddbd2;--accent:#0f6e56;--accent-bg:#e1f5ee;--warn:#854f0b;--warn-bg:#faeeda;--bad:#a32d2d;--bad-bg:#fcebeb;--blue:#185fa5;--blue-bg:#e6f1fb}
+@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#232321;--text:#ecebe6;--muted:#b4b2a9;--line:#3d3d3a;--accent:#5dcaa5;--accent-bg:#08413a;--warn:#fac775;--warn-bg:#412402;--bad:#f09595;--bad-bg:#501313;--blue:#85b7eb;--blue-bg:#0c2f52}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.6}
+main{max-width:860px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:1.7rem;margin:.2em 0}
+h2{font-size:1.3rem;margin:1.8em 0 .5em;padding-top:.4em;border-top:2px solid var(--line)}
+h3{font-size:1.05rem;margin:0 0 .4em}
+.lead{color:var(--muted);font-size:1.05rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:12px 0}
+.feature h3 span{font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:12px;margin-left:6px;vertical-align:middle}
+.where-bit{background:var(--accent-bg);color:var(--accent)}.where-phone{background:var(--blue-bg);color:var(--blue)}
+.lbl{font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-top:8px}
+.concept{background:var(--accent-bg);border-radius:10px;padding:8px 12px;margin-top:8px;font-size:.93rem}
+.try{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:8px 12px;margin-top:8px;font-size:.93rem}
+.note{background:var(--blue-bg);color:var(--blue);border-radius:10px;padding:10px 12px;margin:10px 0}
+.danger{background:var(--bad-bg);color:var(--bad);border-radius:10px;padding:10px 12px;margin:10px 0}
+table{width:100%;border-collapse:collapse;font-size:.92rem;background:var(--card);border-radius:12px;overflow:hidden}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:var(--accent-bg);color:var(--accent)}
+code{background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:0 4px;font-size:.9em}
+pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px;overflow:auto;font-size:.85rem}
+ol li,ul li{margin:4px 0}
+nav.toc{columns:2;font-size:.92rem}nav.toc a{color:var(--accent)}
+@media(max-width:600px){nav.toc{columns:1}}
+svg text{fill:var(--text);font-family:system-ui,sans-serif}
+</style>
+</head>
+<body>
+<main>
+<p><a href="index.html" style="color:var(--accent)">← Back to the controller</a></p>
+<h1>🤖 :MOVE Motor Smart Controller – Guide</h1>
+<p class="lead">How to set up the upgraded app, how to use every feature, and the computing ideas behind each one. Written for teachers and Year 8–10 students.</p>
+
+<nav class="toc card">
+<a href="#upgrade">1. Upgrading from the first version</a><br>
+<a href="#bigidea">2. The big idea: who does what?</a><br>
+<a href="#protocol">3. The messages (our protocol)</a><br>
+<a href="#drive">4. Drive tab</a><br>
+<a href="#smart">5. Smart tab</a><br>
+<a href="#sense">6. Sensors tab</a><br>
+<a href="#prog">7. Program tab</a><br>
+<a href="#ai">8. AI tab</a><br>
+<a href="#fun">9. Fun tab</a><br>
+<a href="#devices">10. Which phone works with what</a><br>
+<a href="#safety">11. Safety rules</a><br>
+<a href="#trouble">12. Troubleshooting</a><br>
+<a href="#teach">13. Lesson ideas</a>
+</nav>
+
+<h2 id="upgrade">1. Upgrading from the first version</h2>
+<ol>
+<li><b>micro:bit:</b> open your MakeCode project, switch to <b>JavaScript</b> view, delete everything and paste in the new <code>move-motor-bluetooth.ts</code>. The extension (only <b>bluetooth</b>) and the <b>No Pairing Required</b> setting stay the same. Download it to the micro:bit.</li>
+<li><b>Website:</b> in your GitHub repository, click <b>Add file → Upload files</b>. Upload the new <code>index.html</code> <i>and</i> <code>guide.html</code> together. Uploading a file with the same name replaces the old one. Click <b>Commit changes</b>.</li>
+<li>Wait about a minute for GitHub Pages to rebuild, then refresh the page on your phone. If you still see the old version, close the tab and open it again. Phones keep a saved copy for a short while.</li>
+<li>Tap <b>Try demo mode</b> first. A pretend robot lets you try every tab without the real one.</li>
+</ol>
+<div class="note">💡 The micro:bit shows a number when its mode changes: <b>0</b> = manual, <b>1</b> = follow me, <b>2</b> = explore, <b>3</b> = line follow. It's a handy way to check that it received the message.</div>
+
+<h2 id="bigidea">2. The big idea: who does what?</h2>
+<p>There are two computers working together: the <b>micro:bit</b> on the robot and the <b>phone</b>. They talk over Bluetooth, but each message takes roughly 20–100 ms to arrive, and sometimes longer. That delay decides where each job runs.</p>
+<svg viewBox="0 0 760 250" width="100%" role="img" aria-label="micro:bit handles fast reactions; phone handles sequences and heavy computing">
+  <rect x="10" y="20" width="300" height="210" rx="14" fill="none" stroke="#1d9e75" stroke-width="2"/>
+  <text x="160" y="50" text-anchor="middle" font-weight="700" font-size="17">micro:bit (on the robot)</text>
+  <text x="30" y="82" font-size="14">⚡ Must react in milliseconds</text>
+  <text x="30" y="110" font-size="14">• Follow me</text><text x="30" y="134" font-size="14">• Explore (avoid obstacles)</text>
+  <text x="30" y="158" font-size="14">• Line following</text><text x="30" y="182" font-size="14">• Safety: auto-stop, failsafe</text>
+  <text x="30" y="206" font-size="14">• Indicators, reversing beep</text>
+  <rect x="450" y="20" width="300" height="210" rx="14" fill="none" stroke="#378add" stroke-width="2"/>
+  <text x="600" y="50" text-anchor="middle" font-weight="700" font-size="17">Phone (the web app)</text>
+  <text x="470" y="82" font-size="14">🧠 Sequences, screens and heavy maths</text>
+  <text x="470" y="110" font-size="14">• Blocks, draw a path, replay</text><text x="470" y="134" font-size="14">• Radar map, distance graph</text>
+  <text x="470" y="158" font-size="14">• Hand tracking AI, voice</text><text x="470" y="182" font-size="14">• Dances, lap timer, clap</text>
+  <text x="470" y="206" font-size="14">• Parking beeps</text>
+  <line x1="315" y1="95" x2="445" y2="95" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="445" y1="155" x2="315" y2="155" stroke="#888" stroke-width="2" marker-end="url(#a)"/>
+  <text x="380" y="86" text-anchor="middle" font-size="12">U38  Q512,640</text>
+  <text x="380" y="146" text-anchor="middle" font-size="12">D60,60  M1  P</text>
+  <text x="380" y="190" text-anchor="middle" font-size="12" font-weight="700">Bluetooth UART</text>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#888"/></marker></defs>
+</svg>
+<div class="concept"><b>Computing concept – distributed systems and latency.</b> If line following ran on the phone, the robot would read the sensor, send it to the phone, wait for the decision and then steer. By then it has already driven off the line. Putting the fast loop on the robot avoids the round trip.</div>
+
+<h2 id="protocol">3. The messages (our protocol)</h2>
+<p>A <b>protocol</b> is an agreed set of rules for communicating. Ours is deliberately simple: one short text line per message. The <b>first letter</b> says what the message is; the rest holds the values.</p>
+<table>
+<tr><th>Phone → micro:bit</th><th>Meaning</th></tr>
+<tr><td><code>D60,-60</code></td><td>Drive: left motor 60 %, right motor −60 % (spins right)</td></tr>
+<tr><td><code>S</code></td><td>Stop and go back to manual mode</td></tr>
+<tr><td><code>M1</code> / <code>M2</code> / <code>M3</code></td><td>Start follow me / explore / line follow</td></tr>
+<tr><td><code>P</code></td><td>Ping: "I'm still here" (sent every 0.4 s in smart modes)</td></tr>
+<tr><td><code>V45</code>, <code>F20</code>, <code>K40</code>, <code>J</code></td><td>Smart speed, follow gap (cm), line dead band, flip line steering</td></tr>
+<tr><td><code>H</code>, <code>T523,300</code></td><td>Horn; play a 523 Hz note for 300 ms</td></tr>
+<tr><td><code>L1</code>, <code>A1</code>, <code>B1</code></td><td>Headlights, obstacle auto-stop, reversing beep (1 = on, 0 = off)</td></tr>
+<tr><td><code>IL</code> <code>IR</code> <code>IH</code> <code>I0</code></td><td>Indicators: left, right, hazards, off</td></tr>
+<tr><td><code>Z1</code>, <code>Z2</code>, <code>Z0</code></td><td>Light show: party, police, off</td></tr>
+<tr><th>micro:bit → Phone</th><th>Meaning</th></tr>
+<tr><td><code>U38</code></td><td>Ultrasonic distance is 38 cm (999 = nothing in range)</td></tr>
+<tr><td><code>Q512,640</code></td><td>Line sensor readings: left, right (0–1023)</td></tr>
+<tr><td><code>OBS</code></td><td>Stopped because something is in the way</td></tr>
+<tr><td><code>M0</code></td><td>Mode changed (e.g. back to manual after the failsafe)</td></tr>
+</table>
+<div class="try">🔍 <b>Try this:</b> open <b>Messages</b> at the bottom of the app and watch the commands as you use each feature. Drive commands are hidden because there are 6 a second.</div>
+
+<h2 id="drive">4. Drive tab</h2>
+<div class="card feature"><h3>🕹️ Joystick and 📱 Tilt <span class="where-phone">phone</span></h3>
+<div class="lbl">How it works</div>
+The joystick gives an <b>x</b> (left/right) and <b>y</b> (forward/back) value from −1 to 1. Two equations mix them into motor speeds: <code>left = y + x</code>, <code>right = y − x</code>. Push straight up and both motors go forward. Push right and the left motor speeds up while the right one slows down, so the robot turns right.
+<div class="concept"><b>Concept:</b> a <b>heartbeat</b>. The phone re-sends the current command 6 times a second. If the micro:bit hears nothing for 0.7 s it stops. That is a <b>failsafe</b>: losing the connection makes the robot stop, never run away.</div></div>
+
+<div class="card feature"><h3>💡 Lights, indicators, hazards, reversing beep <span class="where-bit">micro:bit</span></h3>
+The 4 ZIP LEDs act as headlights (front, white), tail lights (rear, red, brighter when stopped, like brake lights) and amber indicators. A second <code>forever</code> loop on the micro:bit flashes them every 0.4 s and beeps while both motors run backwards.<br>
+<b>Auto-indicate</b> watches the motor speeds. If one side is more than 25 % faster than the other, the robot is turning, so the matching indicator comes on.
+<div class="concept"><b>Concept:</b> <b>selection</b> (<code>if</code> left is slower than right, indicate left) and <b>concurrency</b>: two loops run "at the same time" by taking turns.</div>
+<div class="try">🔧 If the lights appear in the wrong corners, change the four numbers <code>LED_FRONT_LEFT</code> etc. near the top of the micro:bit code.</div></div>
+
+<div class="card feature"><h3>🅿️ Parking beeps <span class="where-phone">phone</span></h3>
+Below 60 cm the phone beeps. The closer the obstacle, the shorter the gap between beeps. Under 8 cm the beep is almost continuous and higher pitched, like a real car.
+<div class="concept"><b>Concept:</b> a <b>linear mapping</b>. 5 cm → 60 ms gap, 60 cm → 700 ms gap, with values in between scaled proportionally: <code>gap = 60 + (distance − 5) ÷ 55 × 640</code>.</div></div>
+
+<div class="card feature"><h3>⏺️ Record &amp; replay <span class="where-phone">phone</span></h3>
+While recording, every <i>new</i> command is stored with a timestamp (ms since you pressed Record). Repeated heartbeat copies are ignored. Replay waits the same amount of time between each command. The route is saved on the phone, so it is still there after you refresh.
+<div class="concept"><b>Concept:</b> <b>data structures</b>. The recording is a list of records such as <code>{t: 1520, c: "D60,60"}</code>.</div>
+<div class="try">🤔 <b>Discuss:</b> why does the replay never end up in <i>exactly</i> the same place? (Wheel slip, battery level, Bluetooth delay. The robot has no way to measure where it actually is. That is <b>open-loop control</b>.)</div></div>
+
+<h2 id="smart">5. Smart tab <span style="font-size:.8rem;color:var(--muted)">(all run on the micro:bit)</span></h2>
+<p>Each smart mode is a <b>sense → decide → act</b> loop that runs about 15 times a second. The phone sends <code>P</code> every 0.4 s. If the robot hears nothing for 1.5 s it switches itself back to manual and stops.</p>
+
+<div class="card feature"><h3>🚶 Follow me</h3>
+<pre>if distance &gt; 70:            stop            # lost you
+elif distance &lt; gap - 5:     reverse         # too close
+elif distance &gt; gap + 5:     forward, faster the further away you are
+else:                        stop            # just right</pre>
+<b>Use:</b> hold a large book flat in front of the sensor at about 20 cm and walk slowly backwards. Smooth, flat objects reflect sound best; a hand works but less reliably.
+<div class="concept"><b>Concept:</b> <b>feedback / proportional control</b>. Speed = (distance − gap) × 3, so the further the robot falls behind, the harder it tries to catch up. The ±5 cm zone (a <b>dead band</b>) stops it jittering back and forth.</div>
+<div class="note">📍 <b>Why not follow the phone's GPS?</b> Phone GPS is only accurate to about 5–10 m, which is bigger than a classroom, and Bluetooth signal strength jumps around too much to measure distance. The ultrasonic sensor is accurate to about 1 cm.</div></div>
+
+<div class="card feature"><h3>🧭 Explore (obstacle avoidance)</h3>
+Drives forward. When something is closer than 25 cm it stops, reverses for 0.35 s, turns a <b>random</b> direction for a random time, and carries on.
+<div class="concept"><b>Concept:</b> randomness makes it less likely to get stuck going back and forth in a corner. This is how early robot vacuum cleaners worked.</div>
+<div class="try">🧪 <b>Challenge:</b> build a maze from books. How long does Explore take to escape? Could a smarter rule (e.g. "always turn right", the wall-follower algorithm) do better?</div></div>
+
+<div class="card feature"><h3>〰️ Line follow</h3>
+Two sensors underneath shine infrared light at the floor and measure how much bounces back (0–1023). A dark line reflects less than a light floor.
+<pre>difference = left - right
+if difference &gt; dead band:     turn left
+elif difference &lt; -dead band:  turn right
+else:                          go straight</pre>
+<b>Set-up:</b>
+<ol>
+<li>Make a loop with 2 cm black electrical tape on a light floor (gentle curves at first).</li>
+<li>With <b>both</b> sensors over plain floor, tap <b>Suggest dead band</b>. Sensors are never perfectly matched, and this ignores the normal difference between them.</li>
+<li>Place the line between the sensors and press Start. If it immediately steers <i>off</i> the line, tap <b>Flip steering</b>.</li>
+</ol>
+<div class="concept"><b>Concept:</b> <b>calibration</b> and <b>thresholds</b>. Watch the live bars move as you slide paper under the robot; that is the raw data the algorithm decides from.</div></div>
+
+<h2 id="sense">6. Sensors tab</h2>
+<div class="card feature"><h3>📏 How the ultrasonic sensor measures distance</h3>
+The micro:bit sends a 10 µs pulse to the <b>trigger</b> pin (P13). The sensor sends out a burst of 40 kHz sound (too high to hear) and the <b>echo</b> pin (P14) stays high until the echo returns. Sound travels about 343 m/s, so it takes about 58 µs to go 1 cm <i>and back</i>: <code>distance = echo time ÷ 58</code>. The code uses 39 on the older micro:bit V1 because its timer counts differently.</div>
+
+<div class="card feature"><h3>📈 Live distance graph <span class="where-phone">phone</span></h3>
+Plots the last 15 seconds of readings. Gaps mean "nothing in range". Dashed lines show the 12 cm auto-stop and 30 cm caution levels.
+<div class="try">🧪 <b>Investigate:</b> point the robot at a cushion, then at a wall. Which gives a steadier line? Why? (Soft surfaces absorb sound; angled surfaces bounce it away.)</div></div>
+
+<div class="card feature"><h3>📡 Radar scan <span class="where-phone">phone</span></h3>
+The robot turns a small step, stops, waits for a fresh reading and records <code>(angle, distance)</code>, repeating until it has turned 360°. Each pair is turned into a dot using trigonometry: <code>x = sin(angle) × distance</code>, <code>y = cos(angle) × distance</code>.
+<b>Calibrate first:</b> tap <b>Test 1 step</b> several times and adjust the slider until the number matches how far it really turns.
+<div class="concept"><b>Concept:</b> <b>polar → Cartesian coordinates</b>, and how robot vacuums and self-driving cars (LiDAR) build a map of a room.</div></div>
+
+<h2 id="prog">7. Program tab</h2>
+<div class="card feature"><h3>📏 Calibrate first!</h3>
+The robot has no wheel sensors, so it can't measure distance travelled. Instead the app converts distance into time: <code>time = distance ÷ speed</code>. Measure the speed once:
+<ol><li>Tap <b>Drive 2 s</b>. Measure how far it went with a ruler. If it went 46 cm, type <b>23</b> (cm per second).</li>
+<li>Tap <b>Spin 2 s</b>. Estimate the angle. One and a quarter turns = 450°, so type <b>225</b> (degrees per second).</li></ol></div>
+
+<div class="card feature"><h3>🧩 Blocks</h3>
+Tap blocks to build a program, edit the numbers, and use ▲ to move a block up. The same program appears as <b>Python</b> underneath, which makes a good bridge from blocks to text code. <b>Repeat … End repeat</b> makes a loop; the app "unrolls" it into a list of steps before running. <b>Until wall</b> keeps driving <i>while</i> the distance is bigger than your number.
+<div class="concept"><b>Concepts:</b> <b>sequence</b> (blocks run in order), <b>iteration</b> (count-controlled <code>for</code> = Repeat; condition-controlled <code>while</code> = Until wall), and <b>selection</b> inside the robot's safety checks. The orange outline shows which block is running: a simple <b>trace</b>.</div>
+<div class="try">🧪 <b>Challenges:</b> (1) Drive a square and come back to the start. (2) Drive a triangle: what angle do you need? (120°, not 60°!) (3) Drive to a wall, turn round and come back.</div></div>
+
+<div class="card feature"><h3>✏️ Draw a path</h3>
+Draw with your finger from the ▲. Each grid square is 20 cm. The app takes a point every 12 cm, then for each line segment works out:
+<ol><li>the <b>heading</b> it needs, using <code>atan2</code>;</li><li>the <b>turn</b> = new heading − current heading (kept between −180° and 180° so it never turns the long way round);</li><li>the <b>length</b> = Pythagoras, √(dx² + dy²).</li></ol>
+Short turns under 8° are ignored and straight bits are merged, so the robot doesn't stutter.
+<div class="concept"><b>Concept:</b> <b>abstraction</b>: a wobbly finger line becomes a simple list of "turn, drive" instructions. This is like the way a sat-nav turns a road into directions.</div></div>
+
+<h2 id="ai">8. AI tab</h2>
+<div class="card feature"><h3>✋ Gesture driving <span class="where-phone">phone</span></h3>
+Uses Google's <b>MediaPipe Hand Landmarker</b>, the same tool as our crossing project. A trained neural network finds <b>21 points</b> (landmarks) on your hand in every camera frame. The app then uses simple maths on those points:
+<ul><li><b>Steering:</b> where the middle of your palm (point 9) is compared with the centre of the picture gives x and y, just like the joystick. The white box is a dead zone.</li>
+<li><b>Fist = stop:</b> if 3 or more fingertips are closer to the wrist than their knuckles are, the fingers are folded.</li>
+<li><b>No hand seen = stop.</b> This is a safety rule.</li></ul>
+Start the camera, check the dots follow your hand, then turn <b>Drive with hand</b> ON.
+<div class="concept"><b>Concept:</b> the AI does the hard part (recognition); <b>ordinary rules</b> turn its output into decisions. Most real AI systems are built this way.</div></div>
+
+<div class="card feature"><h3>🎙️ Voice control <span class="where-phone">phone</span></h3>
+The browser's speech recognition turns speech into text. The app then searches the text for keywords, so "please go forward" still works. "Forward" drives 40 cm, "left/right" turns 90°, "stop" stops everything.
+<div class="concept"><b>Concept:</b> <b>string searching</b>. The order of the checks matters: "go back" contains "go" (forward!), so "back" is checked first. Ask students to find other words that could confuse it (e.g. "write" sounds like "right").</div></div>
+
+<h2 id="fun">9. Fun tab</h2>
+<div class="card feature"><h3>💃 Dances &amp; 🌈 light shows</h3>
+A dance is just a list of steps (drive, spin, note, lights), so it uses exactly the same runner as block programs. Students can design their own in the Blocks tab using Note and Light show blocks.</div>
+<div class="card feature"><h3>⏱️ Lap timer, obstacle course and 👏 clap to start</h3>
+Set out a course with cones or cups. Tap <b>Start</b> (or turn on <b>Clap to start</b> and clap), tap <b>Lap</b> each time the robot crosses the line, and tap <b>+2 s</b> when it knocks something. <b>Finish</b>, type a name and <b>Save</b> for the top-5 leaderboard (stored on that phone).<br>
+<b>Clap detection</b> listens to the microphone. A clap is a short, very loud spike, so it triggers when the loudest sample is over a threshold <i>and</i> 5× louder than the running average of background noise. A loud classroom raises the average, so steady talking doesn't set it off.
+<div class="concept"><b>Concept:</b> <b>signal processing</b> and avoiding false positives; sorting a leaderboard.</div></div>
+
+<h2 id="devices">10. Which phone works with what</h2>
+<table>
+<tr><th>Feature</th><th>Android – Chrome</th><th>iPhone – Bluefy</th><th>Laptop – Chrome/Edge</th></tr>
+<tr><td>Bluetooth driving, smart modes, sensors, programs, dances</td><td>✅</td><td>✅</td><td>✅</td></tr>
+<tr><td>Tilt driving</td><td>✅</td><td>✅ (asks permission)</td><td>❌ no motion sensor</td></tr>
+<tr><td>Gesture driving (camera)</td><td>✅</td><td>⚠️ may not be allowed</td><td>✅ webcam</td></tr>
+<tr><td>Voice control</td><td>✅</td><td>❌ usually not supported</td><td>✅</td></tr>
+<tr><td>Clap to start, parking beeps</td><td>✅</td><td>⚠️ usually works</td><td>✅</td></tr>
+</table>
+<div class="note">💡 <b>Classroom tip:</b> a laptop with Chrome can connect to the robot <i>and</i> use the webcam and voice features reliably, which makes it ideal for whole-class demos on the projector.</div>
+
+<h2 id="safety">11. Safety rules</h2>
+<div class="danger">
+<ul>
+<li><b>STOP EVERYTHING</b> is always at the bottom of the screen. It cancels programs, smart modes and gesture driving.</li>
+<li>The robot stops if: Bluetooth disconnects · no drive command for 0.7 s · no ping for 1.5 s in a smart mode · the app is hidden or the phone locks · something is closer than 12 cm while driving forward (auto-stop).</li>
+<li>Drive on the floor, never on tables. Keep fingers and hair away from the wheels.</li>
+<li>Only one phone can connect to a robot at a time. Label robots so students connect to the right one.</li>
+</ul></div>
+
+<h2 id="trouble">12. Troubleshooting</h2>
+<table>
+<tr><th>Problem</th><th>Fix</th></tr>
+<tr><td>Old version still showing</td><td>Close the tab and reopen it; wait a minute after committing on GitHub.</td></tr>
+<tr><td>Smart mode stops by itself after a second</td><td>The pings aren't arriving. Keep the app open and on screen, and stay within about 10 m.</td></tr>
+<tr><td>Paths come up short / turns too small</td><td>Recalibrate (low batteries make the robot slower). Use fresh batteries.</td></tr>
+<tr><td>Line follow wobbles off the line</td><td>Lower Smart speed to 30–35 %; increase the dead band; make curves gentler; try Flip.</td></tr>
+<tr><td>Follow me loses you</td><td>Use a large flat object (a book) facing the sensor squarely; stay within 70 cm.</td></tr>
+<tr><td>Radar map looks squashed</td><td>Calibrate degrees per step; scan on a smooth floor.</td></tr>
+<tr><td>Camera doesn't start</td><td>Allow camera permission; the page must be https; try Chrome on Android or a laptop.</td></tr>
+<tr><td>Lights in the wrong corners</td><td>Swap the <code>LED_…</code> numbers at the top of the micro:bit code.</td></tr>
+<tr><td>Robot doesn't react to anything</td><td>Check the micro:bit shows ✓ (connected). Open Messages to see what is being sent.</td></tr>
+</table>
+
+<h2 id="teach">13. Lesson ideas</h2>
+<table>
+<tr><th>Lesson</th><th>Activity</th><th>Computing links</th></tr>
+<tr><td>1. Protocols</td><td>Watch the Messages log; decode commands; design a new one (e.g. <code>W</code> = wiggle)</td><td>Protocols, networks, encoding</td></tr>
+<tr><td>2. Sensors &amp; data</td><td>Distance graph investigation: surfaces, angles, accuracy</td><td>Input, data, sampling, accuracy</td></tr>
+<tr><td>3. Algorithms</td><td>Blocks challenges (square, triangle, wall-and-back); compare with the Python view</td><td>Sequence, selection, iteration, tracing</td></tr>
+<tr><td>4. Control systems</td><td>Follow me vs replay: closed-loop (uses a sensor) vs open-loop (just timing)</td><td>Feedback, systems thinking</td></tr>
+<tr><td>5. Line follower</td><td>Calibrate, tune the dead band and speed, time a lap</td><td>Thresholds, testing, evaluation</td></tr>
+<tr><td>6. AI &amp; ethics</td><td>Gesture and voice control; when does it fail? Who might it not work for (accents, lighting, skin tones)?</td><td>Machine learning, bias, HCI</td></tr>
+<tr><td>7. Enterprise / EDGE</td><td>Design a product using the robot for an SDG (e.g. a warehouse helper or an accessible guide robot) and pitch it</td><td>Design, empathy, enterprise</td></tr>
+</table>
+<p style="color:var(--muted);font-size:.85rem;margin-top:24px">Hardware notes: :MOVE motor V3.1. Motors are driven through WS2811 chips on P12; ZIP LEDs on P8; ultrasonic trigger P13 and echo P14; line sensors P1 (right) and P2 (left).</p>
+</main>
+</body>
+</html>
