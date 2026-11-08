@@ -40,6 +40,7 @@ svg text{fill:var(--text);font-family:system-ui,sans-serif}
 <p class="lead">How to set up the upgraded app, how to use every feature, and the computing ideas behind each one. Written for teachers and Year 8–10 students.</p>
 
 <nav class="toc card">
+<a href="#lite">⭐ The Lite version</a><br>
 <a href="#upgrade">1. Upgrading from the first version</a><br>
 <a href="#bigidea">2. The big idea: who does what?</a><br>
 <a href="#protocol">3. The messages (our protocol)</a><br>
@@ -54,6 +55,14 @@ svg text{fill:var(--text);font-family:system-ui,sans-serif}
 <a href="#trouble">12. Troubleshooting</a><br>
 <a href="#teach">13. Lesson ideas</a>
 </nav>
+
+<h2 id="lite">⭐ The Lite version (start here if the robot crashes)</h2>
+<p>If the micro:bit shows a <b>sad face</b> and disconnects, use the Lite version: <code>lite.html</code> on the phone and <code>move-motor-lite.ts</code> on the micro:bit. You need <b>both</b>, because the crash happens on the micro:bit, not the phone.</p>
+<div class="card"><b>Why the full version can crash:</b> the motors and ZIP LEDs use NeoPixel-style chips. Sending to them briefly stops the micro:bit listening to anything else, including the Bluetooth radio. Do that too often and Bluetooth faults, so the micro:bit crashes (sad face) and restarts. The full version refreshed the lights every 0.4 s and the motors many times a second.
+<div class="concept"><b>What the Lite micro:bit code does differently:</b> it only sends to the motors when the speed <i>changes</i>, only sends to the lights when you switch them on or off, plays one sound at a time from a single loop, sends the distance only when it changes by 2 cm (or every 0.5 s), and keeps the Bluetooth message handler short. Smart modes show as one dot on the bottom row of the display instead of a number.</div></div>
+<table><tr><th>In Lite</th><th>Left out (for now)</th></tr>
+<tr><td>Joystick &amp; tilt · horn · steady headlights · auto-stop · parking beeps · distance graph · follow me · explore · blocks · draw a path · record &amp; replay · lap timer &amp; clap</td><td>Indicators &amp; hazards · reversing beep · light shows · dances · line follow · radar · gesture &amp; voice</td></tr></table>
+<div class="try">🧪 <b>Engineering habit:</b> once Lite runs reliably, add back <b>one</b> feature at a time and test after each. If it crashes, you know exactly what caused it. This is <b>incremental development</b>.</div>
 
 <h2 id="upgrade">1. Upgrading from the first version</h2>
 <ol>

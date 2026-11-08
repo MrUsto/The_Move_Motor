@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0f6e56">
+<title>:MOVE Motor Lite</title>
+<style>
+:root{--bg:#f4f3ee;--card:#fff;--text:#23221f;--muted:#5f5e5a;--line:#dddbd2;--accent:#0f6e56;--accent-bg:#e1f5ee;--bad:#a32d2d;--bad-bg:#fcebeb;--warn:#854f0b;--warn-bg:#faeeda;--grid:#e8e6de}
+@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#232321;--text:#ecebe6;--muted:#b4b2a9;--line:#3d3d3a;--accent:#5dcaa5;--accent-bg:#08413a;--bad:#f09595;--bad-bg:#501313;--warn:#fac775;--warn-bg:#412402;--grid:#2e2e2b}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
+body{padding:env(safe-area-inset-top) 12px calc(env(safe-area-inset-bottom) + 90px)}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 2px}
+header h1{font-size:1.15rem;margin:0}
+h2{font-size:1rem;margin:0 0 6px}
+p.hint{font-size:.85rem;color:var(--muted);margin:2px 0 10px;line-height:1.45}
+.status{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%;background:#b4b2a9}.dot.on{background:#1d9e75}.dot.demo{background:#ef9f27}
+button{font:inherit;border:0;border-radius:12px;cursor:pointer;touch-action:manipulation}
+button:disabled{opacity:.45}
+.connect{width:100%;padding:14px;font-size:1.05rem;font-weight:700;background:#0f6e56;color:#fff;margin-bottom:8px}
+.connect.off{background:var(--bad-bg);color:var(--bad)}
+.link{background:none;color:var(--accent);font-size:.88rem;padding:4px;text-decoration:underline}
+.notice{display:none;background:var(--warn-bg);color:var(--warn);border-radius:12px;padding:10px 12px;font-size:.88rem;margin-bottom:10px;line-height:1.45}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px}
+.dist{display:flex;align-items:center;gap:12px}
+.dist b{font-size:1.7rem;font-variant-numeric:tabular-nums;min-width:96px}
+.bar{flex:1;height:14px;background:var(--line);border-radius:7px;overflow:hidden}
+.bar div{height:100%;width:0;background:#1d9e75;transition:width .15s,background .15s}
+.alert{display:none;margin-top:8px;background:var(--bad-bg);color:var(--bad);border-radius:10px;padding:8px 10px;font-weight:700;text-align:center}
+.chip{display:inline-block;font-size:.78rem;padding:3px 8px;border-radius:20px;background:var(--accent-bg);color:var(--accent);font-weight:700}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin:0 -12px 10px;padding:0 12px;scrollbar-width:none;position:sticky;top:0;background:var(--bg);z-index:5;padding-top:6px;padding-bottom:6px}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:0 0 auto;padding:9px 13px;background:var(--card);border:1px solid var(--line);color:var(--muted);font-weight:700;font-size:.9rem}
+.tabs button.on{background:var(--accent-bg);color:var(--accent);border-color:#1d9e75}
+.panel{display:none}.panel.on{display:block}
+.padwrap{display:flex;justify-content:center;padding:6px 0}
+#pad{position:relative;width:min(74vw,280px);height:min(74vw,280px);border-radius:50%;background:radial-gradient(circle,var(--card) 0 34%,var(--bg) 35% 100%);border:2px solid var(--line);touch-action:none;user-select:none}
+#pad::before{content:"▲";position:absolute;top:8px;left:50%;transform:translateX(-50%);color:var(--muted)}
+#pad::after{content:"▼";position:absolute;bottom:8px;left:50%;transform:translateX(-50%);color:var(--muted)}
+.side{position:absolute;top:50%;transform:translateY(-50%);color:var(--muted)}
+#knob{position:absolute;width:34%;height:34%;left:33%;top:33%;border-radius:50%;background:#0f6e56;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:transform .08s}
+#pad.active #knob{transition:none}
+.readout{text-align:center;font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.btns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.btns.two{grid-template-columns:repeat(2,1fr)}.btns.four{grid-template-columns:repeat(4,1fr)}
+.btns button,.b{padding:12px 6px;font-weight:700;background:var(--card);border:1px solid var(--line);color:var(--text);font-size:.92rem}
+.btns button.on,.b.on{background:var(--accent-bg);border-color:#1d9e75;color:var(--accent)}
+.go{background:#0f6e56!important;color:#fff!important;border-color:#0f6e56!important}
+.row{display:flex;align-items:center;gap:10px;font-size:.9rem;margin:6px 0}
+.row input[type=range]{flex:1;accent-color:#1d9e75}
+.row b{min-width:58px;text-align:right;font-variant-numeric:tabular-nums}
+.tiltbox{display:none;text-align:center}
+.hold{width:100%;padding:24px 10px;font-size:1.15rem;font-weight:800;background:#0f6e56;color:#fff;touch-action:none;user-select:none}
+.hold.active{background:#1d9e75;box-shadow:inset 0 0 0 4px #c0dd97}
+details{font-size:.85rem;color:var(--muted)}
+.log{font-family:ui-monospace,monospace;font-size:.75rem;max-height:140px;overflow:auto;background:var(--bg);border-radius:8px;padding:6px;margin-top:6px}
+.sub{display:flex;gap:6px;margin-bottom:8px}
+.sub button{flex:1;padding:10px;background:var(--card);border:1px solid var(--line);color:var(--muted);font-weight:700}
+.sub button.on{background:var(--accent-bg);color:var(--accent);border-color:#1d9e75}
+canvas{width:100%;display:block;border-radius:12px;background:var(--bg);touch-action:none}
+.smart{border-width:2px}.smart.active{border-color:#1d9e75;background:var(--accent-bg)}
+.smart .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.smart .top button{padding:10px 16px}
+.mini{font-size:.8rem;color:var(--muted)}
+.lbars{display:grid;grid-template-columns:auto 1fr auto;gap:6px 8px;align-items:center;font-size:.85rem;margin:8px 0}
+.palette{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.palette button{padding:10px 4px;font-size:.82rem;font-weight:700;background:var(--card);border:1px solid var(--line);color:var(--text)}
+.prog{list-style:none;margin:0;padding:0;min-height:44px;border:2px dashed var(--line);border-radius:12px;padding:6px}
+.prog li{display:flex;align-items:center;gap:6px;background:var(--accent-bg);color:var(--accent);border-radius:9px;padding:6px 8px;margin:4px 0;font-weight:700;font-size:.88rem}
+.prog li.loop{background:var(--warn-bg);color:var(--warn)}
+.prog li.now{outline:3px solid #ef9f27}
+.prog li input{width:58px;font:inherit;padding:3px 5px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--text)}
+.prog li .x{margin-left:auto;background:none;color:inherit;padding:2px 8px;font-size:1rem}
+.prog li .mv{background:none;color:inherit;padding:2px 4px}
+pre.code{background:var(--bg);border-radius:10px;padding:10px;font-size:.8rem;overflow:auto;margin:8px 0 0;white-space:pre}
+.big{font-size:2.4rem;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0}
+table.lb{width:100%;border-collapse:collapse;font-size:.85rem}table.lb td{padding:4px;border-top:1px solid var(--line)}
+.meter{height:10px;background:var(--line);border-radius:5px;overflow:hidden}.meter div{height:100%;width:0;background:#ef9f27}
+video{width:100%;border-radius:12px;transform:scaleX(-1);background:#000;display:block}
+.camwrap{position:relative}.camwrap canvas{position:absolute;inset:0;width:100%;height:100%;background:none;transform:scaleX(-1)}
+.stopbar{position:fixed;left:0;right:0;bottom:0;padding:8px 12px calc(env(safe-area-inset-bottom) + 8px);background:linear-gradient(transparent,var(--bg) 30%);z-index:10}
+.stopbar button{width:100%;padding:16px;font-size:1.15rem;font-weight:800;background:#e24b4a;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.runstat{text-align:center;font-size:.85rem;font-weight:700;color:var(--warn);min-height:1.2em}
+input[type=text],input[type=number]{font:inherit;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--text)}
+.guide{font-size:.85rem}
+</style>
+</head>
+<body>
+<header>
+  <h1>🤖 :MOVE Motor <span class="chip">Lite</span></h1>
+  <div class="status"><span class="dot" id="dot"></span><span id="status">Not connected</span></div>
+</header>
+
+<div class="notice" id="notice"></div>
+<button class="connect" id="connectBtn">Connect to micro:bit</button>
+<div style="text-align:center"><button class="link" id="demoBtn">Try demo mode (no robot)</button> <a class="link" href="guide.html#lite">📘 Guide</a> <a class="link" href="index.html">Full version</a></div>
+
+<div class="card">
+  <div class="dist"><b id="dist">– cm</b><div class="bar"><div id="distBar"></div></div></div>
+  <div class="alert" id="alert">🛑 Obstacle!</div>
+  <div class="runstat" id="runstat"></div>
+</div>
+
+<nav class="tabs" id="tabs">
+  <button data-p="drive" class="on">🕹️ Drive</button>
+  <button data-p="smart">🧠 Smart</button>
+  <button data-p="sense">📡 Sensors</button>
+  <button data-p="prog">🧩 Program</button>
+    <button data-p="fun">🎉 Fun</button>
+</nav>
+
+<!-- ================= DRIVE ================= -->
+<section class="panel on" id="p-drive">
+  <div class="sub"><button id="mJoy" class="on">🕹️ Joystick</button><button id="mTilt">📱 Tilt</button></div>
+  <div class="card" id="joyBox">
+    <div class="padwrap"><div id="pad"><span class="side" style="left:10px">◀</span><span class="side" style="right:10px">▶</span><div id="knob"></div></div></div>
+    <div class="readout" id="readout">Drag the green knob to drive. Let go to stop.</div>
+  </div>
+  <div class="card tiltbox" id="tiltBox">
+    <p class="hint">Hold the phone flat. Press and hold the button, then tilt forward/back to drive and left/right to steer.</p>
+    <button class="hold" id="holdBtn">HOLD TO DRIVE</button>
+    <div class="readout" id="tiltReadout" style="margin-top:8px">–</div>
+  </div>
+  <div class="card"><div class="row"><span>Max speed</span><input type="range" id="speed" min="20" max="100" step="5" value="60"><b id="speedV">60%</b></div></div>
+  <div class="btns two" style="margin-bottom:8px">
+    <button id="hornBtn">📯 Horn</button>
+    <button id="lightsBtn">💡 Lights</button>
+    <button id="autoBtn" class="on">🛑 Auto-stop</button>
+    <button id="parkBtn">🅿️ Parking beeps</button>
+  </div>
+  <div class="card">
+    <h2>⏺️ Record &amp; replay</h2>
+    <p class="hint">Press Record, drive a route, press Stop. Replay sends the same commands with the same timing.</p>
+    <div class="btns"><button id="recBtn">⏺️ Record</button><button id="playBtn" disabled>▶️ Replay</button><button id="recClear" disabled>🗑️ Clear</button></div>
+    <div class="readout" id="recInfo" style="margin-top:6px">Nothing recorded yet.</div>
+  </div>
+</section>
+
+<!-- ================= SMART ================= -->
+<section class="panel" id="p-smart">
+  <p class="hint">Smart modes run <b>on the micro:bit</b> because they must react within milliseconds. The phone just keeps saying "I'm still here". If it goes quiet for 1.5 s the robot stops.</p>
+  <div class="card"><div class="row"><span>Smart speed</span><input type="range" id="smartSpeed" min="20" max="80" step="5" value="45"><b id="smartSpeedV">45%</b></div></div>
+
+  <div class="card smart" id="sm1">
+    <div class="top"><h2>🚶 Follow me</h2><button class="b go" data-m="1">Start</button></div>
+    <p class="hint">Hold a book or your hand in front of the sensor and walk slowly. The robot keeps the same gap.</p>
+    <div class="row"><span>Gap</span><input type="range" id="followCm" min="10" max="40" step="1" value="20"><b id="followCmV">20 cm</b></div>
+  </div>
+
+  <div class="card smart" id="sm2">
+    <div class="top"><h2>🧭 Explore (avoid obstacles)</h2><button class="b go" data-m="2">Start</button></div>
+    <p class="hint">Drives forward. When something is closer than 25 cm it stops, backs up, turns a random way and carries on.</p>
+  </div>
+
+</section>
+
+<!-- ================= SENSORS ================= -->
+<section class="panel" id="p-sense">
+  <div class="card">
+    <h2>📈 Live distance graph</h2>
+    <canvas id="graph" height="170"></canvas>
+    <p class="mini">Last 15 seconds. Red line = auto-stop (12 cm), amber = caution (30 cm).</p>
+    <div class="btns two"><button id="parkBtn2">🅿️ Parking beeps</button><button id="graphPause">⏸️ Pause graph</button></div>
+  </div>
+</section>
+
+<!-- ================= PROGRAM ================= -->
+<section class="panel" id="p-prog">
+  <div class="sub"><button id="pgBlocks" class="on">🧩 Blocks</button><button id="pgDraw">✏️ Draw a path</button><button id="pgCal">📏 Calibrate</button></div>
+
+  <div id="blocksBox">
+    <div class="card">
+      <h2>🧩 Block program</h2>
+      <p class="hint">Tap blocks to add them. Change the numbers. Repeat… End repeat makes a loop.</p>
+      <div class="palette">
+        <button data-b="fwd">⬆️ Forward</button><button data-b="back">⬇️ Back</button><button data-b="wait">⏸️ Wait</button>
+        <button data-b="left">↰ Turn left</button><button data-b="right">↱ Turn right</button><button data-b="wall">🧱 Until wall</button>
+        <button data-b="horn">📯 Horn</button><button data-b="lights">💡 Lights</button>
+        <button data-b="repeat">🔁 Repeat</button><button data-b="end">⏹ End repeat</button>
+      </div>
+      <ul class="prog" id="prog"></ul>
+      <div class="btns" style="margin-top:8px"><button id="progRun" class="go">▶️ Run</button><button id="progEx">✨ Example</button><button id="progClear">🗑️ Clear</button></div>
+      <details style="margin-top:8px" open><summary>The same program as Python</summary><pre class="code" id="progCode"></pre></details>
+    </div>
+  </div>
+
+  <div id="drawBox" style="display:none">
+    <div class="card">
+      <h2>✏️ Draw a path</h2>
+      <p class="hint">The ▲ is the robot, facing up. Draw a route from it with your finger. Each square is 20 cm.</p>
+      <canvas id="draw" height="320"></canvas>
+      <div class="btns" style="margin-top:8px"><button id="drawRun" class="go">▶️ Drive it</button><button id="drawUndo">↩️ Undo</button><button id="drawClear">🗑️ Clear</button></div>
+      <p class="mini" id="drawInfo" style="margin-top:6px">–</p>
+    </div>
+  </div>
+
+  <div id="calBox" style="display:none">
+    <div class="card">
+      <h2>📏 Calibrate movement</h2>
+      <p class="hint">Programs and drawn paths turn "go 50 cm" into "drive for 2.5 s". That needs to know how fast <i>your</i> robot moves on <i>your</i> floor.</p>
+      <div class="row"><span>Program speed</span><input type="range" id="progSpeed" min="30" max="80" step="5" value="50"><b id="progSpeedV">50%</b></div>
+      <p class="hint"><b>1.</b> Put a ruler next to the robot. Tap <b>Drive 2 s</b> and measure how far it went. Speed = distance ÷ 2.</p>
+      <div class="row"><button class="b" id="calDrive">⬆️ Drive 2 s</button><span>cm per second</span><input type="number" id="cmps" value="20" min="2" max="150" style="width:80px"></div>
+      <p class="hint"><b>2.</b> Tap <b>Spin 2 s</b>, estimate how many degrees it turned (one full turn = 360°). Turn speed = degrees ÷ 2.</p>
+      <div class="row"><button class="b" id="calSpin">🔄 Spin 2 s</button><span>degrees per second</span><input type="number" id="dps" value="180" min="20" max="1000" style="width:80px"></div>
+      <p class="mini">Batteries running low make the robot slower, so recalibrate if paths start falling short.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FUN ================= -->
+<section class="panel" id="p-fun">
+  <div class="card">
+    <h2>⏱️ Lap timer &amp; obstacle course</h2>
+    <div class="big" id="timer">0:00.00</div>
+    <div class="btns four"><button id="tStart" class="go">Start</button><button id="tLap">Lap</button><button id="tPen">+2 s</button><button id="tStop">Finish</button></div>
+    <div class="readout" id="laps" style="margin:6px 0">Tap Lap each time the robot crosses the line. +2 s if it knocks a cone.</div>
+    <div class="row"><button class="b" id="clapBtn">👏 Clap to start: OFF</button><div class="meter" style="flex:1"><div id="clapMeter"></div></div></div>
+    <div class="row"><input type="text" id="racer" placeholder="Driver name" style="flex:1"><button class="b" id="tSave" disabled>💾 Save time</button></div>
+    <table class="lb" id="board"></table>
+  </div>
+</section>
+
+<details class="card"><summary>Messages</summary><div class="log" id="log"></div></details>
+<div class="stopbar"><button id="stopAll">⏹ STOP EVERYTHING</button></div>
+
+<script>
+var $ = function(id){ return document.getElementById(id); };
+var $$ = function(sel){ return Array.prototype.slice.call(document.querySelectorAll(sel)); };
+var UART = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+var TX = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';   // micro:bit → phone
+var RX = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';   // phone → micro:bit
+var device = null, rxChar = null, mode = 'none';
+var enc = new TextEncoder(), dec = new TextDecoder(), inbuf = '';
+var lights = false, autoStop = true, lastDrive = 'S', driving = false;
+var distance = 999, lastDistAt = 0, lineVals = [0, 0];
+
+function log(t){ var d = document.createElement('div'); d.textContent = new Date().toLocaleTimeString() + '  ' + t; var l = $('log'); l.appendChild(d); l.scrollTop = l.scrollHeight; while (l.children.length > 120) l.removeChild(l.firstChild); }
+function setStatus(t, cls){ $('status').textContent = t; $('dot').className = 'dot' + (cls ? ' ' + cls : ''); }
+function notice(html){ $('notice').innerHTML = html; $('notice').style.display = html ? 'block' : 'none'; }
+function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function store(k, v){ try { if (v === undefined) return JSON.parse(localStorage.getItem('mm_' + k)); localStorage.setItem('mm_' + k, JSON.stringify(v)); } catch(e){ return null; } }
+
+/* ---------- tabs ---------- */
+$$('#tabs button').forEach(function(b){ b.addEventListener('click', function(){
+  $$('#tabs button').forEach(function(x){ x.classList.toggle('on', x === b); });
+  $$('.panel').forEach(function(p){ p.classList.toggle('on', p.id === 'p-' + b.dataset.p); });
+  sizeCanvases();
+}); });
+
+/* ---------- browser support ---------- */
+var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+if (!('bluetooth' in navigator)){
+  notice(isIOS ? '📱 <b>iPhone/iPad:</b> Safari and Chrome on iOS don\'t support Web Bluetooth. Install the free <b>Bluefy</b> browser from the App Store and open this page in it.'
+               : '⚠️ This browser doesn\'t support Web Bluetooth. Use <b>Chrome</b> on Android, or Chrome/Edge on a laptop. You can still try <b>demo mode</b>.');
+} else if (!window.isSecureContext){
+  notice('⚠️ This page must be opened from an <b>https://</b> address (for example GitHub Pages) for Bluetooth to work.');
+}
+
+/* ================================================================
+   SENDING – one command per line. Only the newest drive command waits
+   in the queue, so a slow link never builds up a backlog of old moves.
+   ================================================================ */
+var sending = false, pending = [];
+function send(cmd){
+  recordCmd(cmd);
+  if (mode === 'demo'){ demoReceive(cmd); return; }
+  if (!rxChar) return;
+  if (cmd[0] === 'D' || cmd === 'S'){ pending = pending.filter(function(c){ return c[0] !== 'D' && c !== 'S'; }); }
+  if (cmd === 'P' && pending.indexOf('P') >= 0) return;
+  pending.push(cmd); pump();
+}
+async function pump(){
+  if (sending || !rxChar || !pending.length) return;
+  sending = true;
+  var cmd = pending.shift();
+  try { await rxChar.writeValue(enc.encode(cmd + '\n')); if (cmd[0] !== 'D' && cmd !== 'P') log('→ ' + cmd); }
+  catch(e){ log('Send failed: ' + e.message); }
+  sending = false; pump();
+}
+
+/* ---------- receiving ---------- */
+function handleLine(line){
+  line = line.trim(); if (!line) return;
+  var c = line[0];
+  if (c === 'U') showDistance(parseInt(line.slice(1), 10));
+  else if (line === 'OBS'){ showObstacle(); }
+  else if (c === 'M'){ var m = +line.slice(1); if (m === 0 && smartMode){ smartMode = 0; updateSmartUI(); log('Robot returned to manual mode'); } }
+  else log('micro:bit: ' + line);
+}
+function onData(e){
+  inbuf += dec.decode(e.target.value);
+  var lines = inbuf.split('\n'); inbuf = lines.pop(); lines.forEach(handleLine);
+}
+function showDistance(cm){
+  var none = isNaN(cm) || cm >= 999;
+  distance = none ? 999 : cm; lastDistAt = performance.now();
+  $('dist').textContent = none ? '– cm' : cm + ' cm';
+  $('distBar').style.width = (none ? 100 : Math.min(100, cm)) + '%';
+  $('distBar').style.background = !none && cm < 12 ? '#e24b4a' : (!none && cm < 30 ? '#ef9f27' : '#1d9e75');
+  addGraphPoint(none ? null : cm);
+}
+var obsTimer = null;
+function showObstacle(){ $('alert').style.display = 'block'; if (navigator.vibrate) navigator.vibrate(200); clearTimeout(obsTimer); obsTimer = setTimeout(function(){ $('alert').style.display = 'none'; }, 1200); }
+
+/* ---------- connect ---------- */
+async function connect(){
+  if (mode !== 'none'){ disconnect(); return; }
+  if (!('bluetooth' in navigator)){ log('Web Bluetooth not available in this browser'); return; }
+  try {
+    setStatus('Choose your micro:bit…');
+    device = await navigator.bluetooth.requestDevice({filters:[{namePrefix:'BBC micro:bit'}], optionalServices:[UART]});
+    device.addEventListener('gattserverdisconnected', onDisconnected);
+    setStatus('Connecting…');
+    var server = await device.gatt.connect();
+    var svc = await server.getPrimaryService(UART);
+    var tx = await svc.getCharacteristic(TX);
+    await tx.startNotifications(); tx.addEventListener('characteristicvaluechanged', onData);
+    rxChar = await svc.getCharacteristic(RX);
+    mode = 'ble'; setStatus('Connected: ' + (device.name || 'micro:bit'), 'on'); connectedUI();
+    log('Connected to ' + device.name);
+    sendSettings();
+  } catch(e){
+    setStatus('Not connected'); rxChar = null; log('Could not connect: ' + e.message);
+    if (/UART|service/i.test(e.message)) notice('The micro:bit was found but has no UART service. Check the micro:bit program uses <b>bluetooth uart service</b> and <b>No Pairing Required</b>, then flash it again.');
+  }
+}
+function sendSettings(){ send(autoStop ? 'A1' : 'A0'); send(lights ? 'L1' : 'L0'); }
+function connectedUI(){ $('connectBtn').textContent = mode === 'demo' ? 'Stop demo' : 'Disconnect'; $('connectBtn').classList.add('off'); $('demoBtn').style.display = 'none'; }
+function onDisconnected(){ if (mode === 'ble'){ log('micro:bit disconnected'); reset(); } }
+function disconnect(){ stopEverything(); if (mode === 'ble' && device && device.gatt.connected) device.gatt.disconnect(); reset(); }
+function reset(){ mode = 'none'; rxChar = null; pending = []; smartMode = 0; updateSmartUI(); cancelRun(); setStatus('Not connected'); $('connectBtn').textContent = 'Connect to micro:bit'; $('connectBtn').classList.remove('off'); $('demoBtn').style.display = ''; showDistance(NaN); }
+$('connectBtn').addEventListener('click', connect);
+
+/* ================================================================
+   DEMO MODE – a pretend robot in a pretend room, so every feature can
+   be tried without hardware. Distance depends on which way it faces.
+   ================================================================ */
+var demo = {l:0, r:0, heading:0, prog:0, obj:40, t:0, escape:0, followCm:20, speed:45, band:40, dir:1};
+function demoRoom(h){ h = ((h % 360) + 360) % 360; var d = 90 + 45 * Math.sin(h * Math.PI / 90); if (h > 330 || h < 25) d = 45; if (h > 150 && h < 190) d = 28; return d; }
+$('demoBtn').addEventListener('click', function(){
+  mode = 'demo'; setStatus('Demo mode', 'demo'); connectedUI();
+  log('Demo started: a pretend robot in a pretend room');
+  var timer = setInterval(function(){
+    if (mode !== 'demo'){ clearInterval(timer); return; }
+    var dt = 0.12; demo.t += dt;
+    var dist = smartMode === 1 ? demo.obj - demo.prog : demoRoom(demo.heading) - demo.prog;
+    dist = Math.max(3, dist);
+    var lineL = Math.round(520 + 260 * Math.sin(demo.t * 1.7)), lineR = Math.round(520 - 260 * Math.sin(demo.t * 1.7));
+    // the pretend micro:bit's brain
+    if (smartMode === 1){
+      demo.obj += (8 + 16 * Math.sin(demo.t * 0.5)) * dt;      // your hand walks forward, sometimes back
+      dist = Math.max(3, demo.obj - demo.prog);
+      if (dist > 70) setDemo(0, 0); else if (dist < demo.followCm - 5) setDemo(-demo.speed, -demo.speed);
+      else if (dist > demo.followCm + 5){ var s = Math.min(demo.speed + 20, (dist - demo.followCm) * 3 + 20); setDemo(s, s); } else setDemo(0, 0);
+    } else if (smartMode === 2){
+      if (demo.escape > 0){ demo.escape -= dt; if (demo.escape <= 0) setDemo(0, 0); }
+      else if (dist > 25) setDemo(demo.speed, demo.speed);
+      else { handleLine('OBS'); demo.escape = 0.7; var turn = Math.random() < .5 ? -1 : 1; setDemo(demo.speed * turn, -demo.speed * turn); demo.prog = Math.max(0, demo.prog - 8); }
+    } else if (smartMode === 3){
+      var diff = (lineL - lineR) * demo.dir;
+      if (diff > demo.band) setDemo(0, demo.speed); else if (diff < -demo.band) setDemo(demo.speed, 0); else setDemo(demo.speed, demo.speed);
+    }
+    // physics: turning changes heading, forward changes progress
+    demo.heading += (demo.l - demo.r) * 1.8 * dt;
+    if (Math.abs(demo.l - demo.r) > 20 && smartMode !== 3) demo.prog = Math.max(0, demo.prog - 30 * dt);
+    if (smartMode !== 3) demo.prog += (demo.l + demo.r) / 2 * 0.4 * dt;
+    if (smartMode === 0 && demo.prog < 0) demo.prog = 0;
+    dist = Math.max(3, smartMode === 1 ? demo.obj - demo.prog : demoRoom(demo.heading) - demo.prog);
+    if (smartMode === 0 && autoStop && demo.l + demo.r > 0 && dist < 12){ setDemo(0, 0); handleLine('OBS'); }
+    handleLine('U' + Math.round(dist + (Math.random() - .5)));
+  }, 120);
+});
+function setDemo(l, r){ demo.l = l; demo.r = r; }
+function demoReceive(cmd){
+  var c = cmd[0], a = cmd.slice(1);
+  if (c === 'D'){ if (smartMode) return; var p = a.split(','); var l = +p[0], r = +p[1];
+    var d = demoRoom(demo.heading) - demo.prog;
+    if (autoStop && d < 12 && l + r > 0){ setDemo(0, 0); handleLine('OBS'); } else setDemo(l, r); }
+  else if (cmd === 'S'){ setDemo(0, 0); }
+  else if (c === 'M'){ setDemo(0, 0); demo.escape = 0; if (+a === 1){ demo.prog = 0; demo.obj = 35; } }
+  else if (c === 'V') demo.speed = +a;
+  else if (c === 'F') demo.followCm = +a;
+  else if (c === 'K') demo.band = +a;
+  else if (c === 'J') demo.dir = -demo.dir;
+  else if (c === 'A') autoStop = a === '1';
+  if (c !== 'D' && cmd !== 'P') log('→ ' + cmd + ' (demo)');
+}
+
+/* ================================================================
+   MANUAL DRIVING – mixing x/y into left/right motor speeds
+   ================================================================ */
+function maxSpeed(){ return +$('speed').value; }
+function mix(x, y){                     // x: -1 left … 1 right, y: -1 back … 1 forward
+  var l = y + x, r = y - x, m = Math.max(1, Math.abs(l), Math.abs(r));
+  return [Math.round(l / m * maxSpeed()), Math.round(r / m * maxSpeed())];
+}
+function drive(x, y, label){
+  var lr = mix(x, y);
+  if (Math.abs(lr[0]) < 8 && Math.abs(lr[1]) < 8){ lr = [0, 0]; }
+  setDrive(lr[0], lr[1]);
+  if (label) label.textContent = 'Left motor ' + lr[0] + '%  ·  Right motor ' + lr[1] + '%';
+}
+function setDrive(l, r){
+  var cmd = (l || r) ? 'D' + l + ',' + r : 'S';
+  var changed = cmd !== lastDrive;
+  lastDrive = cmd; driving = !!(l || r);
+  if (changed) send(cmd);
+}
+function takeControl(){ cancelRun(); if (smartMode) stopSmart(); }
+// heartbeat: resend the current drive command 5 times a second while driving
+setInterval(function(){ if (driving && mode !== 'none') send(lastDrive); }, 200);
+
+var pad = $('pad'), knob = $('knob'), padId = null;
+function padMove(e){
+  var r = pad.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, R = r.width / 2 - r.width * 0.17;
+  var dx = e.clientX - cx, dy = e.clientY - cy, d = Math.hypot(dx, dy);
+  if (d > R){ dx *= R / d; dy *= R / d; }
+  knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+  drive(dx / R, -dy / R, $('readout'));
+}
+pad.addEventListener('pointerdown', function(e){ takeControl(); padId = e.pointerId; pad.setPointerCapture(e.pointerId); pad.classList.add('active'); padMove(e); });
+pad.addEventListener('pointermove', function(e){ if (e.pointerId === padId) padMove(e); });
+function padEnd(e){ if (e.pointerId !== padId) return; padId = null; pad.classList.remove('active'); knob.style.transform = ''; setDrive(0, 0); $('readout').textContent = 'Stopped. Drag the knob to drive.'; }
+pad.addEventListener('pointerup', padEnd); pad.addEventListener('pointercancel', padEnd);
+
+var tilt = {x:0, y:0}, holding = false, tiltReady = false;
+function onTilt(e){
+  if (e.beta == null) return;
+  tilt.y = Math.max(-1, Math.min(1, -(e.beta) / 30));
+  tilt.x = Math.max(-1, Math.min(1, (e.gamma) / 30));
+  if (holding) drive(tilt.x, tilt.y, $('tiltReadout'));
+}
+async function enableTilt(){
+  if (tiltReady) return true;
+  try {
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
+      var p = await DeviceOrientationEvent.requestPermission(); if (p !== 'granted'){ $('tiltReadout').textContent = 'Motion access was refused.'; return false; }
+    }
+    window.addEventListener('deviceorientation', onTilt); tiltReady = true; return true;
+  } catch(e){ $('tiltReadout').textContent = 'Tilt is not available on this device.'; return false; }
+}
+var hold = $('holdBtn');
+hold.addEventListener('pointerdown', async function(e){ takeControl(); hold.setPointerCapture(e.pointerId); if (!(await enableTilt())) return; holding = true; hold.classList.add('active'); drive(tilt.x, tilt.y, $('tiltReadout')); });
+function holdEnd(){ if (!holding) return; holding = false; hold.classList.remove('active'); setDrive(0, 0); $('tiltReadout').textContent = 'Stopped. Hold the button to drive.'; }
+hold.addEventListener('pointerup', holdEnd); hold.addEventListener('pointercancel', holdEnd);
+$('mJoy').addEventListener('click', function(){ holdEnd(); $('mJoy').classList.add('on'); $('mTilt').classList.remove('on'); $('joyBox').style.display = ''; $('tiltBox').style.display = 'none'; });
+$('mTilt').addEventListener('click', function(){ $('mTilt').classList.add('on'); $('mJoy').classList.remove('on'); $('joyBox').style.display = 'none'; $('tiltBox').style.display = 'block'; enableTilt(); });
+
+/* ---------- buttons, indicators, beeps ---------- */
+$('speed').addEventListener('input', function(){ $('speedV').textContent = this.value + '%'; });
+$('hornBtn').addEventListener('click', function(){ send('H'); });
+$('lightsBtn').addEventListener('click', function(){ lights = !lights; this.classList.toggle('on', lights); send(lights ? 'L1' : 'L0'); });
+$('autoBtn').addEventListener('click', function(){ autoStop = !autoStop; this.classList.toggle('on', autoStop); send(autoStop ? 'A1' : 'A0'); });
+/* ---------- parking beeps (Web Audio on the phone) ---------- */
+var audio = null, parkOn = false, nextBeep = 0;
+function ac(){ if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); return audio; }
+function beep(freq, ms){ var a = ac(), o = a.createOscillator(), g = a.createGain(); o.frequency.value = freq; g.gain.setValueAtTime(0.25, a.currentTime); g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + ms / 1000); o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + ms / 1000); }
+function setPark(on){ parkOn = on; ac(); $('parkBtn').classList.toggle('on', on); $('parkBtn2').classList.toggle('on', on); }
+$('parkBtn').addEventListener('click', function(){ setPark(!parkOn); });
+$('parkBtn2').addEventListener('click', function(){ setPark(!parkOn); });
+setInterval(function(){
+  if (!parkOn || mode === 'none' || distance >= 60) return;
+  var now = performance.now(); if (now < nextBeep) return;
+  // closer = shorter gap between beeps (a linear map from 5..60 cm to 60..700 ms)
+  var gap = distance < 8 ? 0 : 60 + (distance - 5) / 55 * 640;
+  beep(distance < 8 ? 1400 : 1000, gap === 0 ? 110 : 90);
+  nextBeep = now + Math.max(110, gap);
+}, 30);
+
+/* ---------- record & replay ---------- */
+var rec = {on:false, start:0, list:[], last:''};
+function recordCmd(cmd){
+  if (!rec.on || cmd === 'P' || run.active) return;
+  if ('DSHLIZT'.indexOf(cmd[0]) < 0) return;
+  if ((cmd[0] === 'D' || cmd === 'S') && cmd === rec.last) return;   // ignore heartbeat repeats
+  if (cmd[0] === 'D' || cmd === 'S') rec.last = cmd;
+  rec.list.push({t: performance.now() - rec.start, c: cmd});
+}
+$('recBtn').addEventListener('click', function(){
+  if (!rec.on){ rec = {on:true, start:performance.now(), list:[], last:''}; this.textContent = '⏹️ Stop'; this.classList.add('on'); $('recInfo').textContent = 'Recording… drive now.'; }
+  else { rec.on = false; rec.list.push({t: performance.now() - rec.start, c:'S'}); this.textContent = '⏺️ Record'; this.classList.remove('on');
+    var secs = (rec.list[rec.list.length - 1].t / 1000).toFixed(1);
+    $('recInfo').textContent = 'Recorded ' + rec.list.length + ' commands over ' + secs + ' s.'; $('playBtn').disabled = $('recClear').disabled = false; store('rec', rec.list); }
+});
+$('playBtn').addEventListener('click', function(){
+  var steps = [], t = 0;
+  rec.list.forEach(function(e){ steps.push({t:'wait', ms:e.t - t}); t = e.t;
+    if (e.c[0] === 'D'){ var p = e.c.slice(1).split(','); steps.push({t:'set', l:+p[0], r:+p[1]}); }
+    else if (e.c === 'S') steps.push({t:'set', l:0, r:0}); else steps.push({t:'cmd', c:e.c}); });
+  runSteps(steps, 'Replaying your route');
+});
+$('recClear').addEventListener('click', function(){ rec.list = []; store('rec', []); $('playBtn').disabled = $('recClear').disabled = true; $('recInfo').textContent = 'Nothing recorded yet.'; });
+(function(){ var saved = store('rec'); if (saved && saved.length){ rec.list = saved; $('playBtn').disabled = $('recClear').disabled = false; $('recInfo').textContent = 'Saved route: ' + saved.length + ' commands.'; } })();
+
+/* ================================================================
+   SEQUENCE RUNNER – programs, paths and replays are all
+   just lists of steps. Each run gets a "token"; pressing STOP changes
+   the token so the old run notices and quits.
+   ================================================================ */
+var run = {tok:0, active:false};
+function sleep(ms){ return new Promise(function(r){ setTimeout(r, Math.max(0, ms)); }); }
+function cancelRun(){ run.tok++; if (run.active){ run.active = false; setDrive(0, 0); } $('runstat').textContent = ''; }
+async function runSteps(steps, name, onStep){
+  if (mode === 'none'){ log('Connect (or start demo mode) first'); $('runstat').textContent = 'Connect first (or try demo mode)'; return false; }
+  cancelRun(); if (smartMode) stopSmart();
+  var tok = ++run.tok; run.active = true; $('runstat').textContent = '▶ ' + name + ' – press STOP to cancel';
+  var ok = true;
+  for (var i = 0; i < steps.length; i++){
+    if (tok !== run.tok){ ok = false; break; }
+    var s = steps[i]; if (onStep) onStep(s.src !== undefined ? s.src : i);
+    if (s.t === 'drive'){ setDrive(s.l, s.r); await sleep(s.ms); if (tok !== run.tok){ ok = false; break; } setDrive(0, 0); await sleep(150); }
+    else if (s.t === 'set') setDrive(s.l, s.r);
+    else if (s.t === 'wait') await sleep(s.ms);
+    else if (s.t === 'cmd'){ send(s.c); if (s.c === 'L1' || s.c === 'L0'){ lights = s.c === 'L1'; $('lightsBtn').classList.toggle('on', lights); } }
+    else if (s.t === 'until'){                         // iteration with a condition: keep going until the wall is close
+      setDrive(s.l, s.r); var t0 = performance.now();
+      while (tok === run.tok && distance > s.cm && performance.now() - t0 < 10000) await sleep(40);
+      setDrive(0, 0); await sleep(150);
+    }
+    else if (s.t === 'fn') await s.fn(tok);
+  }
+  if (tok === run.tok){ setDrive(0, 0); run.active = false; $('runstat').textContent = ''; }
+  if (onStep) onStep(-1);
+  return ok;
+}
+
+/* ================================================================
+   SMART MODES – the phone switches mode and keeps pinging
+   ================================================================ */
+var smartMode = 0;
+var smartNames = ['', 'Follow me', 'Explore'];
+function startSmart(m){
+  if (mode === 'none'){ $('runstat').textContent = 'Connect first (or try demo mode)'; return; }
+  cancelRun(); setDrive(0, 0);
+  send('V' + $('smartSpeed').value); send('F' + $('followCm').value);
+  send('M' + m); smartMode = m; updateSmartUI();
+}
+function stopSmart(){ if (!smartMode) return; smartMode = 0; send('S'); updateSmartUI(); }
+function updateSmartUI(){
+  [1, 2].forEach(function(m){ var card = $('sm' + m), b = card.querySelector('button[data-m]');
+    card.classList.toggle('active', smartMode === m); b.textContent = smartMode === m ? 'Stop' : 'Start'; b.classList.toggle('go', smartMode !== m); });
+  if (smartMode) $('runstat').textContent = '🧠 ' + smartNames[smartMode] + ' running on the robot'; else if (!run.active) $('runstat').textContent = '';
+}
+$$('button[data-m]').forEach(function(b){ b.addEventListener('click', function(){ var m = +b.dataset.m; if (smartMode === m) stopSmart(); else startSmart(m); }); });
+setInterval(function(){ if (smartMode && mode !== 'none') send('P'); }, 400);   // "I'm still here"
+function slider(id, unit, cmd){ $(id).addEventListener('input', function(){ $(id + 'V').textContent = this.value + unit; if (cmd && smartMode) send(cmd + this.value); }); }
+slider('smartSpeed', '%', 'V'); slider('followCm', ' cm', 'F');
+/* ================================================================
+   DISTANCE GRAPH
+   ================================================================ */
+var graphPts = [], graphPaused = false;
+function addGraphPoint(v){ if (graphPaused) return; graphPts.push({t:performance.now(), v:v}); while (graphPts.length && performance.now() - graphPts[0].t > 15000) graphPts.shift(); }
+$('graphPause').addEventListener('click', function(){ graphPaused = !graphPaused; this.textContent = graphPaused ? '▶️ Resume graph' : '⏸️ Pause graph'; });
+function sizeCanvases(){ $$('canvas').forEach(function(c){ if (c.id === 'camOver') return; var w = c.clientWidth; if (w && c.width !== Math.round(w * devicePixelRatio)){ var h = +c.getAttribute('height'); c.dataset.h = c.dataset.h || h; c.width = Math.round(w * devicePixelRatio); c.height = Math.round(c.dataset.h * devicePixelRatio); c.style.height = c.dataset.h + 'px'; } }); drawPath(); }
+window.addEventListener('resize', sizeCanvases);
+function drawGraph(){
+  var c = $('graph'); if (c.offsetParent === null) return;
+  var g = c.getContext('2d'), W = c.width, H = c.height, k = devicePixelRatio, max = 150, now = performance.now();
+  g.clearRect(0, 0, W, H); g.font = (11 * k) + 'px system-ui'; g.fillStyle = css('--muted');
+  var y = function(v){ return H - 6 * k - (Math.min(v, max) / max) * (H - 14 * k); };
+  [0, 50, 100, 150].forEach(function(v){ g.strokeStyle = css('--grid'); g.lineWidth = 1; g.beginPath(); g.moveTo(30 * k, y(v)); g.lineTo(W, y(v)); g.stroke(); g.fillText(v, 2 * k, y(v) + 4 * k); });
+  [[12, '#e24b4a'], [30, '#ef9f27']].forEach(function(z){ g.strokeStyle = z[1]; g.setLineDash([5 * k, 4 * k]); g.beginPath(); g.moveTo(30 * k, y(z[0])); g.lineTo(W, y(z[0])); g.stroke(); g.setLineDash([]); });
+  g.strokeStyle = '#1d9e75'; g.lineWidth = 2.5 * k; g.beginPath(); var pen = false;
+  graphPts.forEach(function(p){ var x = 30 * k + (1 - (now - p.t) / 15000) * (W - 30 * k); if (p.v === null){ pen = false; return; } if (pen) g.lineTo(x, y(p.v)); else g.moveTo(x, y(p.v)); pen = true; });
+  g.stroke();
+}
+(function loop(){ if (!graphPaused) drawGraph(); requestAnimationFrame(loop); })();
+
+/* ================================================================
+   PROGRAM TAB – calibration shared by blocks and drawn paths
+   ================================================================ */
+['pgBlocks', 'pgDraw', 'pgCal'].forEach(function(id){ $(id).addEventListener('click', function(){
+  ['pgBlocks', 'pgDraw', 'pgCal'].forEach(function(x){ $(x).classList.toggle('on', x === id); });
+  $('blocksBox').style.display = id === 'pgBlocks' ? '' : 'none'; $('drawBox').style.display = id === 'pgDraw' ? '' : 'none'; $('calBox').style.display = id === 'pgCal' ? '' : 'none';
+  sizeCanvases();
+}); });
+slider('progSpeed', '%');
+function PS(){ return +$('progSpeed').value; }
+function cmps(){ return Math.max(1, +$('cmps').value || 20); }
+function dps(){ return Math.max(1, +$('dps').value || 180); }
+(function(){ var c = store('cal'); if (c){ $('cmps').value = c[0]; $('dps').value = c[1]; $('progSpeed').value = c[2]; $('progSpeedV').textContent = c[2] + '%'; } })();
+['cmps', 'dps', 'progSpeed'].forEach(function(id){ $(id).addEventListener('change', function(){ store('cal', [$('cmps').value, $('dps').value, $('progSpeed').value]); }); });
+$('calDrive').addEventListener('click', function(){ runSteps([{t:'drive', l:PS(), r:PS(), ms:2000}], 'Calibration: drive 2 s'); });
+$('calSpin').addEventListener('click', function(){ runSteps([{t:'drive', l:PS(), r:-PS(), ms:2000}], 'Calibration: spin 2 s'); });
+function moveStep(cm){ var s = cm >= 0 ? PS() : -PS(); return {t:'drive', l:s, r:s, ms:Math.abs(cm) / cmps() * 1000}; }
+function turnStep(deg){ var s = deg >= 0 ? PS() : -PS(); return {t:'drive', l:s, r:-s, ms:Math.abs(deg) / dps() * 1000}; }   // + = right
+
+/* ---------- block programming ---------- */
+var BLOCKS = {
+  fwd:   {label:'⬆️ Forward', unit:'cm', val:30,  py:function(v){ return 'forward(' + v + ')'; }},
+  back:  {label:'⬇️ Back', unit:'cm', val:20,     py:function(v){ return 'backward(' + v + ')'; }},
+  left:  {label:'↰ Turn left', unit:'°', val:90,  py:function(v){ return 'turn_left(' + v + ')'; }},
+  right: {label:'↱ Turn right', unit:'°', val:90, py:function(v){ return 'turn_right(' + v + ')'; }},
+  wait:  {label:'⏸️ Wait', unit:'s', val:1,       py:function(v){ return 'sleep(' + v + ')'; }},
+  wall:  {label:'🧱 Forward until wall <', unit:'cm', val:15, py:function(v){ return 'while distance() > ' + v + ':\n{I}    forward_a_bit()'; }},
+  horn:  {label:'📯 Horn',                        py:function(){ return 'horn()'; }},
+  lights:{label:'💡 Lights on?', unit:'1/0', val:1, py:function(v){ return 'lights(' + (+v ? 'True' : 'False') + ')'; }},
+  repeat:{label:'🔁 Repeat', unit:'times', val:4, py:function(v){ return 'for i in range(' + v + '):'; }},
+  end:   {label:'⏹ End repeat',                   py:function(){ return null; }}
+};
+var program = (store('prog') || []).filter(function(p){ return BLOCKS[p.b]; });
+$$('.palette button').forEach(function(b){ b.addEventListener('click', function(){ var d = BLOCKS[b.dataset.b]; program.push({b:b.dataset.b, v:d.val}); renderProg(); }); });
+function renderProg(){
+  var ul = $('prog'); ul.innerHTML = ''; var depth = 0;
+  program.forEach(function(p, i){
+    var d = BLOCKS[p.b]; if (p.b === 'end') depth = Math.max(0, depth - 1);
+    var li = document.createElement('li'); li.dataset.i = i; li.style.marginLeft = (depth * 18) + 'px';
+    if (p.b === 'repeat' || p.b === 'end') li.className = 'loop';
+    li.appendChild(document.createTextNode(d.label + ' '));
+    if (d.unit){ var inp = document.createElement('input'); inp.type = 'number'; inp.value = p.v; inp.addEventListener('change', function(){ p.v = +inp.value; renderCode(); store('prog', program); }); li.appendChild(inp); li.appendChild(document.createTextNode(' ' + d.unit)); }
+    var up = document.createElement('button'); up.className = 'mv'; up.textContent = '▲'; up.onclick = function(){ if (i > 0){ program.splice(i - 1, 0, program.splice(i, 1)[0]); renderProg(); } }; li.appendChild(up);
+    var x = document.createElement('button'); x.className = 'x'; x.textContent = '✕'; x.onclick = function(){ program.splice(i, 1); renderProg(); }; li.appendChild(x);
+    ul.appendChild(li); if (p.b === 'repeat') depth++;
+  });
+  if (!program.length) ul.innerHTML = '<li style="background:none;color:var(--muted);font-weight:400">Your program is empty – tap a block above.</li>';
+  renderCode(); store('prog', program);
+}
+function renderCode(){
+  var out = ['from robot import *', ''], depth = 0;
+  program.forEach(function(p){
+    if (p.b === 'end'){ depth = Math.max(0, depth - 1); return; }
+    var ind = '    '.repeat(depth), line = BLOCKS[p.b].py(p.v);
+    out.push(ind + line.replace('{I}', ind)); if (p.b === 'repeat') depth++;
+  });
+  if (depth > 0) out.push('# ⚠️ ' + depth + ' repeat block(s) without an End repeat – they loop to the end');
+  $('progCode').textContent = out.join('\n');
+}
+function compile(list){                // turn blocks into steps; loops are "unrolled"
+  var out = [], stack = [];
+  for (var i = 0; i < list.length; i++){
+    var p = list[i];
+    if (p.b === 'repeat'){ stack.push({start:out.length, n:Math.max(1, Math.min(20, Math.round(p.v)))}); continue; }
+    if (p.b === 'end'){ closeLoop(); continue; }
+    if (p.b === 'fwd') out.push(moveStep(p.v)); else if (p.b === 'back') out.push(moveStep(-p.v));
+    else if (p.b === 'left') out.push(turnStep(-p.v)); else if (p.b === 'right') out.push(turnStep(p.v));
+    else if (p.b === 'wait') out.push({t:'wait', ms:p.v * 1000});
+    else if (p.b === 'wall') out.push({t:'until', l:PS(), r:PS(), cm:p.v});
+    else if (p.b === 'horn') out.push({t:'cmd', c:'H'}, {t:'wait', ms:300});
+    else if (p.b === 'lights') out.push({t:'cmd', c:+p.v ? 'L1' : 'L0'});
+    out[out.length - 1].src = i; if (out.length > 1 && out[out.length - 2].src === undefined) out[out.length - 2].src = i;
+    if (out.length > 600) break;
+  }
+  while (stack.length) closeLoop();
+  function closeLoop(){ var l = stack.pop(); if (!l) return; var body = out.slice(l.start); for (var k = 1; k < l.n; k++) out = out.concat(body); }
+  return out;
+}
+$('progRun').addEventListener('click', function(){
+  if (!program.length) return;
+  runSteps(compile(program), 'Running your program', function(i){ $$('#prog li').forEach(function(li){ li.classList.toggle('now', +li.dataset.i === i); }); });
+});
+$('progClear').addEventListener('click', function(){ program = []; renderProg(); });
+$('progEx').addEventListener('click', function(){ program = [{b:'lights', v:1}, {b:'repeat', v:4}, {b:'fwd', v:30}, {b:'right', v:90}, {b:'end'}, {b:'horn'}, {b:'lights', v:0}]; renderProg(); });
+renderProg();
+
+/* ---------- draw a path ---------- */
+var path = [], strokes = [], drawing = false;
+var FIELD = 200;                       // the drawing area is 200 cm across
+function c2cm(c, e){ var r = c.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * FIELD, (e.clientY - r.top) / r.width * FIELD]; }
+function startPoint(){ var c = $('draw'); var h = c.height / c.width * FIELD; return [FIELD / 2, h - 20]; }
+var dc = $('draw');
+dc.addEventListener('pointerdown', function(e){ dc.setPointerCapture(e.pointerId); drawing = true; strokes.push(path.length); if (!path.length) path.push(startPoint()); addPt(c2cm(dc, e)); });
+dc.addEventListener('pointermove', function(e){ if (drawing) addPt(c2cm(dc, e)); });
+dc.addEventListener('pointerup', function(){ drawing = false; drawPath(); });
+function addPt(p){ var last = path[path.length - 1]; if (Math.hypot(p[0] - last[0], p[1] - last[1]) >= 12){ path.push(p); drawPath(); } }   // sample every 12 cm
+$('drawUndo').addEventListener('click', function(){ if (strokes.length){ path.length = strokes.pop(); if (path.length === 1) path = []; drawPath(); } });
+$('drawClear').addEventListener('click', function(){ path = []; strokes = []; drawPath(); });
+function pathToSteps(){                 // each line segment → turn by the change in angle, then drive the length
+  var steps = [], heading = 0, total = 0, turns = 0;
+  for (var i = 1; i < path.length; i++){
+    var dx = path[i][0] - path[i - 1][0], dy = path[i][1] - path[i - 1][1];
+    var want = Math.atan2(dx, -dy) * 180 / Math.PI;           // 0 = up the screen
+    var turn = ((want - heading + 540) % 360) - 180;
+    if (Math.abs(turn) > 8){ steps.push(turnStep(turn)); turns++; heading = want; }
+    var len = Math.hypot(dx, dy); total += len;
+    var last = steps[steps.length - 1];
+    if (last && last.kind === 'fwd' && Math.abs(turn) <= 8){ last.ms += len / cmps() * 1000; }   // merge straight bits
+    else { var s = moveStep(len); s.kind = 'fwd'; steps.push(s); }
+    steps[steps.length - 1].src = i;
+  }
+  return {steps:steps, total:total, turns:turns};
+}
+var drawProgress = -1;
+function drawPath(){
+  var c = $('draw'); if (!c.width || c.offsetParent === null) return;
+  var g = c.getContext('2d'), k = c.width / FIELD;
+  g.clearRect(0, 0, c.width, c.height); g.strokeStyle = css('--grid'); g.lineWidth = 1;
+  for (var x = 0; x <= FIELD; x += 20){ g.beginPath(); g.moveTo(x * k, 0); g.lineTo(x * k, c.height); g.stroke(); }
+  for (var y = 0; y * k <= c.height; y += 20){ g.beginPath(); g.moveTo(0, y * k); g.lineTo(c.width, y * k); g.stroke(); }
+  var sp = startPoint();
+  if (path.length > 1){
+    g.lineWidth = 4 * devicePixelRatio; g.lineJoin = g.lineCap = 'round';
+    for (var i = 1; i < path.length; i++){ g.strokeStyle = drawProgress >= i ? '#ef9f27' : '#1d9e75'; g.beginPath(); g.moveTo(path[i - 1][0] * k, path[i - 1][1] * k); g.lineTo(path[i][0] * k, path[i][1] * k); g.stroke(); }
+    var info = pathToSteps();
+    $('drawInfo').textContent = 'Path: ' + Math.round(info.total) + ' cm, ' + info.turns + ' turns, about ' + Math.round(info.steps.reduce(function(a, s){ return a + s.ms + 150; }, 0) / 1000) + ' s to drive.';
+  } else $('drawInfo').textContent = 'Draw a route starting from the ▲.';
+  g.fillStyle = css('--text'); g.beginPath(); g.moveTo(sp[0] * k, (sp[1] - 7) * k); g.lineTo((sp[0] - 6) * k, (sp[1] + 6) * k); g.lineTo((sp[0] + 6) * k, (sp[1] + 6) * k); g.fill();
+}
+$('drawRun').addEventListener('click', function(){
+  if (path.length < 2) return;
+  runSteps(pathToSteps().steps, 'Driving your drawn path', function(i){ drawProgress = i; drawPath(); });
+});
+
+/* ================================================================
+   FUN: lap timer, clap to start
+   ================================================================ */
+var lap = {start:0, running:false, laps:[], pen:0, end:0};
+function fmt(ms){ var m = Math.floor(ms / 60000), s = (ms % 60000) / 1000; return m + ':' + (s < 10 ? '0' : '') + s.toFixed(2); }
+function lapTime(){ return (lap.running ? performance.now() : lap.end) - lap.start + lap.pen; }
+function startTimer(){ lap = {start:performance.now(), running:true, laps:[], pen:0, end:0}; $('laps').textContent = 'Go! 🏁'; $('tSave').disabled = true; send('H'); }
+$('tStart').addEventListener('click', startTimer);
+$('tLap').addEventListener('click', function(){ if (!lap.running) return; lap.laps.push(lapTime()); var l = lap.laps, n = l.length; $('laps').textContent = l.map(function(t, i){ return 'Lap ' + (i + 1) + ': ' + fmt(t - (i ? l[i - 1] : 0)); }).join(' · '); });
+$('tPen').addEventListener('click', function(){ if (lap.running){ lap.pen += 2000; if (navigator.vibrate) navigator.vibrate(100); } });
+$('tStop').addEventListener('click', function(){ if (!lap.running) return; lap.running = false; lap.end = performance.now(); $('tSave').disabled = false; $('laps').textContent += ' · Finished ' + fmt(lapTime()) + (lap.pen ? ' (incl. ' + lap.pen / 1000 + ' s penalties)' : ''); });
+setInterval(function(){ if (lap.running || lap.end) $('timer').textContent = fmt(lapTime()); }, 50);
+var board = store('board') || [];
+function renderBoard(){ $('board').innerHTML = board.length ? board.map(function(r, i){ return '<tr><td>' + ['🥇', '🥈', '🥉', '4', '5'][i] + '</td><td>' + r.n.replace(/</g, '&lt;') + '</td><td style="text-align:right">' + fmt(r.t) + '</td></tr>'; }).join('') : '<tr><td class="mini">No times saved yet.</td></tr>'; }
+$('tSave').addEventListener('click', function(){ board.push({n:$('racer').value.trim() || 'Driver', t:Math.round(lapTime())}); board.sort(function(a, b){ return a.t - b.t; }); board = board.slice(0, 5); store('board', board); renderBoard(); this.disabled = true; });
+renderBoard();
+
+// clap detection: listen to the mic, look for a sudden loud peak
+var clap = {on:false, stream:null, avg:0.02, last:0};
+$('clapBtn').addEventListener('click', async function(){
+  var b = this;
+  if (clap.on){ clap.on = false; clap.stream.getTracks().forEach(function(t){ t.stop(); }); b.textContent = '👏 Clap to start: OFF'; b.classList.remove('on'); $('clapMeter').style.width = 0; return; }
+  try {
+    clap.stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    var a = ac(), src = a.createMediaStreamSource(clap.stream), an = a.createAnalyser(); an.fftSize = 512; src.connect(an);
+    var data = new Float32Array(an.fftSize); clap.on = true; b.textContent = '👏 Clap to start: ON'; b.classList.add('on');
+    (function listen(){
+      if (!clap.on) return;
+      an.getFloatTimeDomainData(data); var peak = 0; for (var i = 0; i < data.length; i++) peak = Math.max(peak, Math.abs(data[i]));
+      $('clapMeter').style.width = Math.min(100, peak * 140) + '%';
+      var now = performance.now();
+      if (peak > 0.35 && peak > clap.avg * 5 && now - clap.last > 800){ clap.last = now; onClap(); }
+      clap.avg = clap.avg * 0.95 + peak * 0.05;   // running average of background noise
+      requestAnimationFrame(listen);
+    })();
+  } catch(e){ $('laps').textContent = 'Microphone not available: ' + e.message; }
+});
+function onClap(){ log('👏 Clap detected'); if (!lap.running) startTimer(); else $('tLap').click(); }
+
+/* ================================================================
+   SAFETY
+   ================================================================ */
+function stopEverything(){
+  cancelRun(); if (smartMode) stopSmart();
+  holding = false; hold.classList.remove('active');
+  lastDrive = 'S'; driving = false; if (mode !== 'none') send('S');
+}
+$('stopAll').addEventListener('click', stopEverything);
+document.addEventListener('visibilitychange', function(){ if (document.hidden && mode !== 'none') stopEverything(); });
+showDistance(NaN); sizeCanvases(); updateSmartUI();
+</script>
+</body>
+</html>

@@ -95,7 +95,7 @@ input[type=text],input[type=number]{font:inherit;padding:8px;border-radius:8px;b
 
 <div class="notice" id="notice"></div>
 <button class="connect" id="connectBtn">Connect to micro:bit</button>
-<div style="text-align:center"><button class="link" id="demoBtn">Try demo mode (no robot)</button> · <a class="link" href="guide.html">📘 Guide</a></div>
+<div style="text-align:center"><button class="link" id="demoBtn">Try demo mode (no robot)</button> <a class="link" href="guide.html">📘 Guide</a> <a class="link" href="lite.html">Lite version</a></div>
 
 <div class="card">
   <div class="dist"><b id="dist">– cm</b><div class="bar"><div id="distBar"></div></div></div>
@@ -166,7 +166,7 @@ input[type=text],input[type=number]{font:inherit;padding:8px;border-radius:8px;b
     <div class="lbars"><span>Left</span><div class="bar"><div id="lineL"></div></div><b id="lineLV">–</b><span>Right</span><div class="bar"><div id="lineR"></div></div><b id="lineRV">–</b></div>
     <div class="row"><span>Dead band</span><input type="range" id="lineBand" min="10" max="300" step="5" value="40"><b id="lineBandV">40</b></div>
     <div class="btns two"><button id="flipBtn">🔁 Flip steering</button><button id="calBtn">📏 Suggest dead band</button></div>
-    <p class="mini" id="calInfo" style="margin-top:6px">If it steers <i>away</i> from the line, tap Flip steering.</p>
+    <p class="mini" id="calInfo" style="margin-top:6px">Before Suggest: put <b>both</b> sensors over plain floor (no line). If it steers <i>away</i> from the line, tap Flip steering.</p>
   </div>
 </section>
 
