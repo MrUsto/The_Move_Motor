@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0f6e56">
+<title>:MOVE Motor Controller</title>
+<style>
+:root{--bg:#f4f3ee;--card:#fff;--text:#23221f;--muted:#5f5e5a;--line:#dddbd2;--accent:#0f6e56;--accent-bg:#e1f5ee;--bad:#a32d2d;--bad-bg:#fcebeb;--warn:#854f0b;--warn-bg:#faeeda}
+@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#232321;--text:#ecebe6;--muted:#b4b2a9;--line:#3d3d3a;--accent:#5dcaa5;--accent-bg:#08413a;--bad:#f09595;--bad-bg:#501313;--warn:#fac775;--warn-bg:#412402}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
+body{padding:env(safe-area-inset-top) 12px calc(env(safe-area-inset-bottom) + 16px)}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 2px}
+header h1{font-size:1.15rem;margin:0}
+.status{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%;background:#b4b2a9}.dot.on{background:#1d9e75}.dot.demo{background:#ef9f27}
+button{font:inherit;border:0;border-radius:12px;cursor:pointer;touch-action:manipulation}
+.connect{width:100%;padding:14px;font-size:1.05rem;font-weight:700;background:#0f6e56;color:#fff;margin-bottom:8px}
+.connect.off{background:var(--bad-bg);color:var(--bad)}
+.link{background:none;color:var(--accent);font-size:.88rem;padding:4px;text-decoration:underline}
+.notice{display:none;background:var(--warn-bg);color:var(--warn);border-radius:12px;padding:10px 12px;font-size:.88rem;margin-bottom:10px;line-height:1.45}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px}
+.dist{display:flex;align-items:center;gap:12px}
+.dist b{font-size:2rem;font-variant-numeric:tabular-nums;min-width:110px}
+.bar{flex:1;height:14px;background:var(--line);border-radius:7px;overflow:hidden}
+.bar div{height:100%;width:0;background:#1d9e75;transition:width .15s,background .15s}
+.alert{display:none;margin-top:8px;background:var(--bad-bg);color:var(--bad);border-radius:10px;padding:8px 10px;font-weight:700;text-align:center}
+.padwrap{display:flex;justify-content:center;padding:6px 0}
+#pad{position:relative;width:min(78vw,300px);height:min(78vw,300px);border-radius:50%;background:radial-gradient(circle,var(--card) 0 34%,var(--bg) 35% 100%);border:2px solid var(--line);touch-action:none;user-select:none}
+#pad::before{content:"▲";position:absolute;top:8px;left:50%;transform:translateX(-50%);color:var(--muted)}
+#pad::after{content:"▼";position:absolute;bottom:8px;left:50%;transform:translateX(-50%);color:var(--muted)}
+.side{position:absolute;top:50%;transform:translateY(-50%);color:var(--muted)}
+#knob{position:absolute;width:34%;height:34%;left:33%;top:33%;border-radius:50%;background:#0f6e56;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:transform .08s}
+#pad.active #knob{transition:none}
+.readout{text-align:center;font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.btns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.btns button{padding:14px 6px;font-weight:700;background:var(--card);border:1px solid var(--line);color:var(--text);font-size:.95rem}
+.btns button.on{background:var(--accent-bg);border-color:#1d9e75;color:var(--accent)}
+.row{display:flex;align-items:center;gap:10px;font-size:.92rem}
+.row input[type=range]{flex:1;accent-color:#1d9e75}
+.tiltbox{display:none;text-align:center}
+.hold{width:100%;padding:26px 10px;font-size:1.2rem;font-weight:800;background:#0f6e56;color:#fff;touch-action:none;user-select:none}
+.hold.active{background:#1d9e75;box-shadow:inset 0 0 0 4px #c0dd97}
+details{font-size:.85rem;color:var(--muted)}
+.log{font-family:ui-monospace,monospace;font-size:.75rem;max-height:140px;overflow:auto;background:var(--bg);border-radius:8px;padding:6px;margin-top:6px}
+.modes{display:flex;gap:6px;margin-bottom:8px}
+.modes button{flex:1;padding:10px;background:var(--card);border:1px solid var(--line);color:var(--muted);font-weight:700}
+.modes button.on{background:var(--accent-bg);color:var(--accent);border-color:#1d9e75}
+</style>
+</head>
+<body>
+<header>
+  <h1>🤖 :MOVE Motor</h1>
+  <div class="status"><span class="dot" id="dot"></span><span id="status">Not connected</span></div>
+</header>
+
+<div class="notice" id="notice"></div>
+<button class="connect" id="connectBtn">Connect to micro:bit</button>
+<div style="text-align:center"><button class="link" id="demoBtn">Try demo mode (no robot)</button></div>
+
+<div class="card">
+  <div class="dist"><b id="dist">– cm</b><div class="bar"><div id="distBar"></div></div></div>
+  <div class="alert" id="alert">🛑 Obstacle! Stopped.</div>
+</div>
+
+<div class="modes"><button id="mJoy" class="on">🕹️ Joystick</button><button id="mTilt">📱 Tilt</button></div>
+
+<div class="card" id="joyBox">
+  <div class="padwrap"><div id="pad"><span class="side" style="left:10px">◀</span><span class="side" style="right:10px">▶</span><div id="knob"></div></div></div>
+  <div class="readout" id="readout">Drag the green knob to drive. Let go to stop.</div>
+</div>
+
+<div class="card tiltbox" id="tiltBox">
+  <p style="margin:4px 0 10px;font-size:.9rem">Hold the phone flat. Press and hold the button, then tilt forward/back to drive and left/right to steer.</p>
+  <button class="hold" id="holdBtn">HOLD TO DRIVE</button>
+  <div class="readout" id="tiltReadout" style="margin-top:8px">–</div>
+</div>
+
+<div class="card">
+  <div class="row"><span>Max speed</span><input type="range" id="speed" min="20" max="100" step="5" value="60"><b id="speedV">60%</b></div>
+</div>
+
+<div class="btns">
+  <button id="hornBtn">📯 Horn</button>
+  <button id="lightsBtn">💡 Lights</button>
+  <button id="autoBtn" class="on">🛑 Auto-stop</button>
+</div>
+
+<details class="card" style="margin-top:10px"><summary>Messages</summary><div class="log" id="log"></div></details>
+
+<script>
+var $ = function(id){ return document.getElementById(id); };
+var UART = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+var TX = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';   // micro:bit → phone
+var RX = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';   // phone → micro:bit
+var device = null, rxChar = null, mode = 'none';
+var enc = new TextEncoder(), dec = new TextDecoder(), inbuf = '';
+var lights = false, autoStop = true, lastDrive = 'S', driving = false;
+
+function log(t){ var d = document.createElement('div'); d.textContent = new Date().toLocaleTimeString() + '  ' + t; var l = $('log'); l.appendChild(d); l.scrollTop = l.scrollHeight; while (l.children.length > 120) l.removeChild(l.firstChild); }
+function setStatus(t, cls){ $('status').textContent = t; $('dot').className = 'dot' + (cls ? ' ' + cls : ''); }
+function notice(html){ $('notice').innerHTML = html; $('notice').style.display = html ? 'block' : 'none'; }
+
+/* ---------- browser support ---------- */
+var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+if (!('bluetooth' in navigator)){
+  notice(isIOS ? '📱 <b>iPhone/iPad:</b> Safari and Chrome on iOS don\'t support Web Bluetooth. Install the free <b>Bluefy</b> browser from the App Store and open this page in it.'
+               : '⚠️ This browser doesn\'t support Web Bluetooth. Use <b>Chrome</b> on Android, or Chrome/Edge on a laptop.');
+} else if (!window.isSecureContext){
+  notice('⚠️ This page must be opened from an <b>https://</b> address (for example GitHub Pages) for Bluetooth to work.');
+}
+
+/* ---------- sending: always keep only the newest drive command ---------- */
+var sending = false, pending = [];
+function send(cmd){
+  if (mode === 'demo'){ demoReceive(cmd); return; }
+  if (!rxChar) return;
+  if (cmd[0] === 'D' || cmd === 'S'){ pending = pending.filter(function(c){ return c[0] !== 'D' && c !== 'S'; }); }
+  pending.push(cmd); pump();
+}
+async function pump(){
+  if (sending || !rxChar || !pending.length) return;
+  sending = true;
+  var cmd = pending.shift();
+  try { await rxChar.writeValue(enc.encode(cmd + '\n')); if (cmd[0] !== 'D') log('→ ' + cmd); }
+  catch(e){ log('Send failed: ' + e.message); }
+  sending = false; pump();
+}
+
+/* ---------- receiving ---------- */
+function handleLine(line){
+  line = line.trim(); if (!line) return;
+  if (line[0] === 'U'){ showDistance(parseInt(line.slice(1), 10)); }
+  else if (line === 'OBS'){ showObstacle(); log('micro:bit: obstacle stop'); }
+  else log('micro:bit: ' + line);
+}
+function onData(e){
+  inbuf += dec.decode(e.target.value);
+  var lines = inbuf.split('\n'); inbuf = lines.pop(); lines.forEach(handleLine);
+}
+function showDistance(cm){
+  var none = isNaN(cm) || cm >= 999;
+  $('dist').textContent = none ? '– cm' : cm + ' cm';
+  var pct = none ? 100 : Math.min(100, cm);
+  $('distBar').style.width = pct + '%';
+  $('distBar').style.background = !none && cm < 12 ? '#e24b4a' : (!none && cm < 30 ? '#ef9f27' : '#1d9e75');
+}
+var obsTimer = null;
+function showObstacle(){ $('alert').style.display = 'block'; if (navigator.vibrate) navigator.vibrate(200); clearTimeout(obsTimer); obsTimer = setTimeout(function(){ $('alert').style.display = 'none'; }, 1500); }
+
+/* ---------- connect ---------- */
+async function connect(){
+  if (mode !== 'none'){ disconnect(); return; }
+  if (!('bluetooth' in navigator)){ log('Web Bluetooth not available in this browser'); return; }
+  try {
+    setStatus('Choose your micro:bit…');
+    device = await navigator.bluetooth.requestDevice({filters:[{namePrefix:'BBC micro:bit'}], optionalServices:[UART]});
+    device.addEventListener('gattserverdisconnected', onDisconnected);
+    setStatus('Connecting…');
+    var server = await device.gatt.connect();
+    var svc = await server.getPrimaryService(UART);
+    var tx = await svc.getCharacteristic(TX);
+    await tx.startNotifications(); tx.addEventListener('characteristicvaluechanged', onData);
+    rxChar = await svc.getCharacteristic(RX);
+    mode = 'ble'; setStatus('Connected: ' + (device.name || 'micro:bit'), 'on');
+    $('connectBtn').textContent = 'Disconnect'; $('connectBtn').classList.add('off'); $('demoBtn').style.display = 'none';
+    log('Connected to ' + device.name);
+    send(autoStop ? 'A1' : 'A0'); send(lights ? 'L1' : 'L0');
+  } catch(e){
+    setStatus('Not connected'); rxChar = null; log('Could not connect: ' + e.message);
+    if (/UART|service/i.test(e.message)) notice('The micro:bit was found but has no UART service. Check the micro:bit program uses <b>bluetooth uart service</b> and <b>No Pairing Required</b>, then flash it again.');
+  }
+}
+function onDisconnected(){ if (mode === 'ble'){ log('micro:bit disconnected'); reset(); } }
+function disconnect(){ try { send('S'); } catch(e){} if (mode === 'ble' && device && device.gatt.connected) device.gatt.disconnect(); reset(); }
+function reset(){ mode = 'none'; rxChar = null; pending = []; setStatus('Not connected'); $('connectBtn').textContent = 'Connect to micro:bit'; $('connectBtn').classList.remove('off'); $('demoBtn').style.display = ''; showDistance(NaN); }
+$('connectBtn').addEventListener('click', connect);
+
+/* ---------- demo mode ---------- */
+var demoDist = 80, demoMove = 0, demoTimer = null;
+$('demoBtn').addEventListener('click', function(){
+  mode = 'demo'; setStatus('Demo mode', 'demo'); $('connectBtn').textContent = 'Stop demo'; $('connectBtn').classList.add('off'); $('demoBtn').style.display = 'none';
+  log('Demo started: the "robot" drives towards a wall');
+  demoTimer = setInterval(function(){
+    if (mode !== 'demo'){ clearInterval(demoTimer); return; }
+    demoDist = Math.max(4, Math.min(150, demoDist - demoMove * 0.06 + (demoMove === 0 ? 0.3 : 0)));
+    if (autoStop && demoMove > 0 && demoDist < 12){ demoMove = 0; handleLine('OBS'); }
+    handleLine('U' + Math.round(demoDist));
+  }, 150);
+});
+function demoReceive(cmd){
+  if (cmd[0] === 'D'){ var p = cmd.slice(1).split(','); var l = +p[0], r = +p[1]; demoMove = (autoStop && demoDist < 12 && l + r > 0) ? 0 : (l + r) / 2; if (demoMove === 0 && l + r > 0) handleLine('OBS'); }
+  else if (cmd === 'S') demoMove = 0;
+  else if (cmd[0] === 'A') autoStop = cmd[1] === '1';
+  if (cmd[0] !== 'D') log('→ ' + cmd + ' (demo)');
+}
+
+/* ---------- driving: mixing x/y into left/right motor speeds ---------- */
+function maxSpeed(){ return +$('speed').value; }
+function mix(x, y){                     // x: -1 left … 1 right, y: -1 back … 1 forward
+  var l = y + x, r = y - x, m = Math.max(1, Math.abs(l), Math.abs(r));
+  return [Math.round(l / m * maxSpeed()), Math.round(r / m * maxSpeed())];
+}
+function drive(x, y, label){
+  var lr = mix(x, y);
+  if (Math.abs(lr[0]) < 8 && Math.abs(lr[1]) < 8){ lr = [0, 0]; }
+  lastDrive = 'D' + lr[0] + ',' + lr[1];
+  driving = true;
+  label.textContent = 'Left motor ' + lr[0] + '%  ·  Right motor ' + lr[1] + '%';
+}
+function stopDriving(label, text){ driving = false; lastDrive = 'S'; send('S'); if (label) label.textContent = text; }
+// heartbeat: resend the current drive command 6 times a second while driving
+setInterval(function(){ if (driving && mode !== 'none') send(lastDrive); }, 160);
+
+/* ---------- joystick ---------- */
+var pad = $('pad'), knob = $('knob'), padId = null;
+function padMove(e){
+  var r = pad.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, R = r.width / 2 - r.width * 0.17;
+  var dx = e.clientX - cx, dy = e.clientY - cy, d = Math.hypot(dx, dy);
+  if (d > R){ dx *= R / d; dy *= R / d; }
+  knob.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+  drive(dx / R, -dy / R, $('readout'));
+}
+pad.addEventListener('pointerdown', function(e){ padId = e.pointerId; pad.setPointerCapture(e.pointerId); pad.classList.add('active'); padMove(e); send(lastDrive); });
+pad.addEventListener('pointermove', function(e){ if (e.pointerId === padId) padMove(e); });
+function padEnd(e){ if (e.pointerId !== padId) return; padId = null; pad.classList.remove('active'); knob.style.transform = ''; stopDriving($('readout'), 'Stopped. Drag the knob to drive.'); }
+pad.addEventListener('pointerup', padEnd); pad.addEventListener('pointercancel', padEnd);
+
+/* ---------- tilt mode ---------- */
+var tilt = {x:0, y:0}, holding = false, tiltReady = false;
+function onTilt(e){
+  if (e.beta == null) return;
+  tilt.y = Math.max(-1, Math.min(1, -(e.beta) / 30));       // tip forward = drive forward
+  tilt.x = Math.max(-1, Math.min(1, (e.gamma) / 30));
+  if (holding) drive(tilt.x, tilt.y, $('tiltReadout'));
+}
+async function enableTilt(){
+  if (tiltReady) return true;
+  try {
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
+      var p = await DeviceOrientationEvent.requestPermission(); if (p !== 'granted'){ $('tiltReadout').textContent = 'Motion access was refused.'; return false; }
+    }
+    window.addEventListener('deviceorientation', onTilt); tiltReady = true; return true;
+  } catch(e){ $('tiltReadout').textContent = 'Tilt is not available on this device.'; return false; }
+}
+var hold = $('holdBtn');
+hold.addEventListener('pointerdown', async function(e){ hold.setPointerCapture(e.pointerId); if (!(await enableTilt())) return; holding = true; hold.classList.add('active'); drive(tilt.x, tilt.y, $('tiltReadout')); send(lastDrive); });
+function holdEnd(){ if (!holding) return; holding = false; hold.classList.remove('active'); stopDriving($('tiltReadout'), 'Stopped. Hold the button to drive.'); }
+hold.addEventListener('pointerup', holdEnd); hold.addEventListener('pointercancel', holdEnd);
+
+$('mJoy').addEventListener('click', function(){ holdEnd(); $('mJoy').classList.add('on'); $('mTilt').classList.remove('on'); $('joyBox').style.display = ''; $('tiltBox').style.display = 'none'; });
+$('mTilt').addEventListener('click', function(){ $('mTilt').classList.add('on'); $('mJoy').classList.remove('on'); $('joyBox').style.display = 'none'; $('tiltBox').style.display = 'block'; enableTilt(); });
+
+/* ---------- buttons ---------- */
+$('speed').addEventListener('input', function(){ $('speedV').textContent = this.value + '%'; });
+$('hornBtn').addEventListener('click', function(){ send('H'); });
+$('lightsBtn').addEventListener('click', function(){ lights = !lights; this.classList.toggle('on', lights); send(lights ? 'L1' : 'L0'); });
+$('autoBtn').addEventListener('click', function(){ autoStop = !autoStop; this.classList.toggle('on', autoStop); send(autoStop ? 'A1' : 'A0'); });
+
+/* ---------- safety: stop if the page is hidden ---------- */
+document.addEventListener('visibilitychange', function(){ if (document.hidden && mode !== 'none'){ driving = false; send('S'); } });
+showDistance(NaN);
+</script>
+</body>
+</html>
